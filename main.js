@@ -18,10 +18,10 @@ const Events     = Matter.Events;
 const Mouse      = Matter.Mouse;
 const MouseConstraint = Matter.MouseConstraint;
 
-let Matterballs = [],
-Matterbeads = [],
-Pixiballs = [],
-Pixibeads = [];
+let Matterballs = [];
+let Matterbeads = [];
+let Pixiballs = [];
+let Pixibeads = [];
 
 window.onload = ()=>{
 
@@ -115,6 +115,7 @@ window.onload = ()=>{
         // Composite.add(engine.world, balls);
 
         for(let i = 0; i < columns; i++){
+            let balls = [];
             const ball = Bodies.circle(xx + i * columnGap, yy, radius, {
                 restitution: 0,
                 friction: 0.00001,
@@ -125,9 +126,10 @@ window.onload = ()=>{
                 },
             });
             Composite.add(engine.world, ball);
-            Matterballs.push(ball);
-            Pixiballs.push(new PIXI.Graphics().drawCircle(xx + i * columnGap, yy, radius));
+            balls.push(ball);
+            //Pixiballs.push(new PIXI.Graphics().drawCircle(xx + i * columnGap, yy, radius));
         }
+        
 
         //2段目
         let n = 0;
