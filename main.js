@@ -18,32 +18,15 @@ const Events     = Matter.Events;
 const Mouse      = Matter.Mouse;
 const MouseConstraint = Matter.MouseConstraint;
 
-let Matterballs = [];
 let Matterbeads = [];
-let Pixiballs = [];
-let Pixibeads = [];
+let Matterframe = [];
 
 window.onload = ()=>{
 
     // Pixi.js
     const app = new PIXI.Application({width: WIDTH, height: HEIGHT});
-    let g = new PIXI.Graphics();
     document.body.appendChild(app.view);
-    app.stage.addChild(g);
-
-    // let drawballs = (points, r) => {
-    //     if(!g) {
-    //         // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
-    //         g = new PIXI.Graphics(); 
-    //         app.stage.addChild(g);
-    //     }
-    //     g.clear(); // 前回の描画をクリア
-    //     g.beginFill(0xffffff);
-    //     points.forEach(p => {
-    //         g.drawCircle(p.x, p.y, r);
-    //     });
-    //     g.endFill();
-    // }
+    let g;
 
     //matter.js
 	// 物理エンジン本体のクラス
@@ -67,7 +50,7 @@ window.onload = ()=>{
 	});
 	Render.run(render);
 
-    // 物理世界を更新します
+    // 物理世界を更新
 	const runner = Runner.create();
 	Runner.run(runner, engine);
 
@@ -96,57 +79,42 @@ window.onload = ()=>{
           columnGap = 1,
           rowGap = 2,
           radius = 10,
-          xx = WIDTH/2 - radius*columns,
+          xx = 60,
           yy = HEIGHT/2;
 
     let createSoftbody = () => {
 
-        // const balls = Composites.stack(xx, yy, columns, rows, columnGap, rowGap,(x, y) => { 
-        //     return Bodies.circle(x, y, radius, {
-        //     restitution: 0,
-        //     friction: 0.00001,
-        //     density: 0.01,
-        //     frictionAir: 0.0011,
-        //     collisionFilter: {
-        //         category: lquidCategory
-        //     },
-        //     });
-        // });
-        // Composite.add(engine.world, balls);
+        let Matterballs = [];
+        //let Pixiballs = [];
 
-        for(let i = 0; i < columns; i++){
-            let balls = [];
-            const ball = Bodies.circle(xx + i * columnGap, yy, radius, {
-                restitution: 0,
-                friction: 0.00001,
-                density: 0.01,
-                frictionAir: 0.0011,
-                collisionFilter: {
-                    category: lquidCategory
-                },
-            });
-            Composite.add(engine.world, ball);
-            balls.push(ball);
-            //Pixiballs.push(new PIXI.Graphics().drawCircle(xx + i * columnGap, yy, radius));
-        }
-        
-
-        //2段目
-        let n = 0;
-        for(let j = columns; j < 2 * columns; j++){
-            const ball = Bodies.circle(xx + n * columnGap, yy + rowGap, radius, {
-                restitution: 0,
-                friction: 0.00001,
-                density: 0.01,
-                frictionAir: 0.0011,
-                collisionFilter: {
-                    category: lquidCategory
-                },
-            });
-            Composite.add(engine.world, ball);
-            Matterballs.push(ball);
-            Pixiballs.push(new PIXI.Graphics().drawCircle(xx + n * columnGap, yy + rowGap, radius));
-            n++;
+        for(let i = 0; i < columns * 2; i++){
+            if(i < columns){
+                let ball = Bodies.circle(xx + i * columnGap, yy, radius, {
+                    restitution: 0,
+                    friction: 0.00001,
+                    density: 0.01,
+                    frictionAir: 0.0011,
+                    collisionFilter: {
+                        category: lquidCategory
+                    },
+                });
+                Composite.add(engine.world, ball);
+                Matterballs.push(ball);
+            }else{
+                //2段目
+                let ball = Bodies.circle(xx + (i - columns) * columnGap, yy + rowGap, radius, {
+                    restitution: 0,
+                    friction: 0.00001,
+                    density: 0.01,
+                    frictionAir: 0.0011,
+                    collisionFilter: {
+                        category: lquidCategory
+                    },
+                });
+                Composite.add(engine.world, ball);
+                Matterballs.push(ball);
+            }
+            Matterframe.push(Matterballs);
         }
 
         //〇を接続
@@ -205,7 +173,6 @@ window.onload = ()=>{
             });   
             Composite.add(engine.world, bead);
             Matterbeads.push(bead);
-            Pixibeads.push(g.drawCircle(x, y, radius2));
         }
 
         // エンジンをUpdateした後の処理を書く
@@ -216,35 +183,28 @@ window.onload = ()=>{
                 g = new PIXI.Graphics(); 
                 app.stage.addChild(g);
             }
-            for(let i = 0; i < Matterballs.length; i++){
-                let MatterObj = Matterballs[i];
-                let PixiObj = Pixiballs[i];
-                PixiObj.clear(); // 前回の描画をクリア
-                PixiObj.beginFill(0xffffff);
-                PixiObj.drawCircle(MatterObj.position.x, MatterObj.position.y, radius);
-                PixiObj.endFill();
-            }
-            for(let i = 0; i < Matterbeads.length; i++){
-                let MatterObj = Matterbeads[i];
-                let PixiObj = Pixibeads[i];
-                PixiObj.clear(); // 前回の描画をクリア
-                PixiObj.beginFill(0xffffff);
-                PixiObj.drawCircle(MatterObj.position.x, MatterObj.position.y, radius2);
-                PixiObj.endFill();
-            }
-        });
+            g.clear(); 
+            g.beginFill(0xffffff);
 
-        // Events.on(engine, 'afterUpdate',() => {
-            // const ballspoints = balls.bodies.map(b => b.position);
-            // const beadspoints = Arraybeads.map(p => p.position);
-            // drawballs(ballspoints, radius);
-            // drawballs(Arraybeads, radius2);
-        // });
+            //ball
+            for (let i = 0; i < Matterframe.length; i++) {
+                for (let j = 0; j < Matterframe[i].length; j++) {
+                    const p = Matterframe[i][j];
+                    g.drawCircle(p.position.x, p.position.y, radius);
+                }
+            }
+
+            //bead
+            for (let i = 0; i < Matterbeads.length; i++) {
+                const p = Matterbeads[i];
+                g.drawCircle(p.position.x, p.position.y, radius2);
+            }
+            g.endFill();
+        });
     }
 
     //　クリックしたらでてくるよ
     document.getElementById('sendButton').addEventListener('click', () => {
         createSoftbody();
     });
-
 }
