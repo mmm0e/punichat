@@ -14,7 +14,7 @@ const PORT = 3000;
 
 // ルーティングの設定。'/' にリクエストがあった場合 src/index.html を返す
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(__dirname + '/index2.html');
 });
 
 // 3000番ポートでHTTPサーバーを起動
@@ -27,13 +27,14 @@ server.listen(PORT, () => {
 io.on('connection', (socket) => {
   console.log('connected');
 
-  // 'sendMessage' というイベント名で受信できる
-  // 第一引数には受信したメッセージが入り、ログに出力する
-  socket.on('sendMessage', (message) => {
-    console.log('Message has been sent: ', message);
+  // 'pointermove' というイベント名で受信できる
+  // 第一引数には受信した座標が入り、ログに出力する
+  socket.on('pointermove', (id, x, y) => {
+    console.log(id, x, y);
     
-    // 'receiveMessage' というイベントを発火、受信したメッセージを全てのクライアントに対して送信する
-    io.emit('receiveMessage', message);
+    // 'bunnyreceive' というイベントを発火
+    // 受信した座標を全てのクライアントに対して送信する
+    io.emit('bunnyreceive',id, x, y);
   });
 
 });
