@@ -18,6 +18,8 @@ const Events     = Matter.Events;
 const Mouse      = Matter.Mouse;
 const MouseConstraint = Matter.MouseConstraint;
 
+const socket = io();
+
 let Matterbeads = [];
 let Matterframe = [];
 
@@ -177,7 +179,7 @@ window.onload = ()=>{
 
         // エンジンをUpdateした後の処理を書く
         // 動いたmatterの座標を取り出す内容
-        Events.on(engine, 'afterUpdate',() => {
+        Events.on(engine, 'afterUpdate', () => {
             if(!g) {
                 // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
                 g = new PIXI.Graphics(); 
@@ -186,25 +188,65 @@ window.onload = ()=>{
             g.clear(); 
             g.beginFill(0xffffff);
 
-            //ball
-            for (let i = 0; i < Matterframe.length; i++) {
-                for (let j = 0; j < Matterframe[i].length; j++) {
-                    const p = Matterframe[i][j];
+            for(let i = 0; i < Matterframe.length; i++){
+                Matterframe[i].forEach(p => {
                     g.drawCircle(p.position.x, p.position.y, radius);
-                }
+                });
             }
-
-            //bead
-            for (let i = 0; i < Matterbeads.length; i++) {
-                const p = Matterbeads[i];
-                g.drawCircle(p.position.x, p.position.y, radius2);
+            for(let i = 0; i < Matterbeads.length; i++){
+                g.drawCircle(Matterbeads[i].position.x, Matterbeads[i].position.y, radius2);
             }
             g.endFill();
+        
+            // サーバーにballsの座標を送信
+            const ballsData = {
+                Matterballs: Matterframe.map(frame => frame.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
+                Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
+            };
+            socket.emit('ballsmove', ballsData);
         });
+        // Events.on(engine, 'afterUpdate',() => {
+        //     if(!g) {
+        //         // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
+        //         g = new PIXI.Graphics(); 
+        //         app.stage.addChild(g);
+        //     }
+        //     g.clear(); 
+        //     g.beginFill(0xffffff);
+
+        //     //ball
+        //     for (let i = 0; i < Matterframe.length; i++) {
+        //         for (let j = 0; j < Matterframe[i].length; j++) {
+        //             const p = Matterframe[i][j];
+        //             g.drawCircle(p.position.x, p.position.y, radius);
+        //         }
+        //     }
+
+        //     //bead
+        //     for (let i = 0; i < Matterbeads.length; i++) {
+        //         const p = Matterbeads[i];
+        //         g.drawCircle(p.position.x, p.position.y, radius2);
+        //     }
+        //     g.endFill();
+        // });
     }
 
-    //　クリックしたらでてくるよ
-    document.getElementById('sendButton').addEventListener('click', () => {
-        createSoftbody();
+    // クリックしたらでてくるよ
+    // document.getElementById('sendButton').addEventListener('click', () => {
+    //     createSoftbody();
+    // });
+
+    //createSoftbody();
+
+    // サーバーから座標データを受信してballsの位置を更新
+    socket.on('ballsupdate', (ballsData) => {
+        for (let i = 0; i < Matterframe.length; i++) {
+            Matterframe[i].forEach((p, index) => {
+                Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
+            });
+        }
+        for (let i = 0; i < Matterbeads.length; i++) {
+            Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+        }
     });
 }
