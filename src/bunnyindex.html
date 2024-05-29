@@ -15,12 +15,12 @@
       const app = new PIXI.Application({ background: '#96C78C', resizeTo: window });
       document.body.appendChild(app.view);
 
-      const texture = PIXI.Texture.from('https://stickershop.line-scdn.net/stickershop/v1/product/21802595/LINEStorePC/main.png?v=1');
+      const texture = PIXI.Texture.from('https://s3-ap-northeast-1.amazonaws.com/killy-image/linestamp/4c/4caa/4caafca7026f3e6d9de193b448f155d54318ad62');
       texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
       let bunnies = [];
-      for (let i = 0; i < 3; i++){
-        let bunny = createBunny(i, (0.5 * i * app.screen.width),(0.5 * i * app.screen.height));
+      for (let i = 0; i < 10; i++){
+        let bunny = createBunny(i, (0.1 * i * app.screen.width),(0.1 * i * app.screen.height));
         bunnies.push(bunny);
       }
 
