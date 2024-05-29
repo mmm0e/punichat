@@ -14,7 +14,7 @@ const PORT = 3000;
 
 // ルーティングの設定。'/' にリクエストがあった場合 src/index.html を返す
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index2.html');
+  res.sendFile(__dirname + '/index.html');
 });
 
 // 3000番ポートでHTTPサーバーを起動
