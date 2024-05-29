@@ -3,6 +3,7 @@
 	<meta charset="UTF-8">
 </head>
 <body>
+    <script src="/socket.io/socket.io.js"></script>
 	<script src="//cdn.jsdelivr.net/npm/matter-js@0.18.0/build/matter.min.js"></script>
 	<script src="//cdn.jsdelivr.net/npm/matter-wrap@0.2.0/build/matter-wrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
@@ -11,6 +12,6 @@
     <h1>simple chat</h1>
     <input id="inputText" type="text">
     <input id="sendButton" type="submit">
-    <ul id="messageList" />
+    <ul id="messageList"></ul>
 </body>
 </html>
