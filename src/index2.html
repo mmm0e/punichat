@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <script src="https://pixijs.download/release/pixi.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
     <title>dragging</title>
   </head>
   <body>
@@ -18,8 +18,10 @@
       const texture = PIXI.Texture.from('https://stickershop.line-scdn.net/stickershop/v1/product/21802595/LINEStorePC/main.png?v=1');
       texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
+      let bunnies = [];
       for (let i = 0; i < 3; i++){
-        createBunny((0.5 * i * app.screen.width),(0.5 * i * app.screen.height));
+        let bunny = createBunny(i, (0.5 * i * app.screen.width),(0.5 * i * app.screen.height));
+        bunnies.push(bunny);
       }
 
       let dragTarget = null;
@@ -29,31 +31,26 @@
       app.stage.on('pointerup', onDragEnd);
       app.stage.on('pointerupoutside', onDragEnd);
 
-      io.on("connection", (socket) => {
-        // イベントが送られてきたら以下を実行
-        //移動した後の真ん中のbunnyの座標をget
-        var bunnyx = bunny[1].getBoundingClientRect().x;
-        var bunnyy = bunny[1].getBoundingClientRect().y;
-
-        // socketに送信
-        socket.emit('pointermove', (bunnyx, bunnyy));
-
-        // socketから受信
-        socket.on('bunnyreceive', (bunnyx, bunnyy) => {
-          createBunny(bunnyx, bunnyy);
-        });
-
+      socket.on('bunnyreceive', (id, bunnyx, bunnyy) => {
+        // IDに基づいて対応するバニーの座標を更新
+        bunnies[id].x = bunnyx;
+        bunnies[id].y = bunnyy;
+        // let bunny = bunnies.find(b => b.id === id);
+        // if (bunny) {
+        //   bunny.x = x;
+        //   bunny.y = y;
+        // }
       });
 
-      function createBunny(x, y){
+      function createBunny(id, x, y){
         const bunny = new PIXI.Sprite(texture);
+        bunny.id = id; // IDを付与
         bunny.eventMode = 'static';
         bunny.cursor = 'pointer';
         bunny.anchor.set(0.5);
         bunny.scale.set(0.8);
 
-        // setup events for mouse + touch using
-        // the pointer events
+        // setup events for mouse + touch using the pointer events
         bunny.on('pointerdown', onDragStart, bunny);
 
         // move the sprite to its designated position
@@ -62,11 +59,14 @@
 
         // add it to the stage
         app.stage.addChild(bunny);
+        return bunny; // return the created bunny
       }
 
       function onDragMove(event){
         if (dragTarget){
             dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+             // send the new position to the server
+            socket.emit('pointermove', dragTarget.id, dragTarget.x, dragTarget.y);
         }
       }
 
@@ -80,6 +80,10 @@
         if (dragTarget){
           app.stage.off('pointermove', onDragMove);
           dragTarget.alpha = 1;
+
+          // 最終位置をサーバーに送信
+          socket.emit('pointermove', dragTarget.id, dragTarget.x, dragTarget.y);
+
           dragTarget = null;
         }
       }
