@@ -73,7 +73,7 @@ window.onload = ()=>{
             render: {visible: false}
         }
     });
-    Composite.add(engine.world, mouseConstraint);
+    //Composite.add(engine.world, mouseConstraint);
 
     // add bodies
     const lquidCategory = 0x0004;
@@ -183,6 +183,11 @@ window.onload = ()=>{
             Matterbeads.push(bead);
         }
 
+        // マウスコンストレイントを追加するかどうかを決定
+        if (isLocalCreation) {
+            Composite.add(engine.world, mouseConstraint);
+        }
+
         // エンジンをUpdateした後の処理を書く
         // 動いたmatterの座標を取り出す内容
         Events.on(engine, 'afterUpdate', () => {
@@ -214,10 +219,6 @@ window.onload = ()=>{
             socket.emit('ballsmove', ballsData);
         });
 
-        // // マウスコンストレイントを追加するかどうかを決定
-        // if (!isLocalCreation) {
-        //     Composite.add(engine.world, mouseConstraint);
-        // }
      
     }
 
@@ -225,7 +226,7 @@ window.onload = ()=>{
     document.getElementById('sendButton').addEventListener('click', () => {
         isLocal = true;
         // 生成されたボールが自分の画面で生成されたものであることを示すフラグを true に設定
-        createSoftbody();
+        createSoftbody(null, true);
         // サーバーに自分がボールを生成したことを通知し、
         //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
         socket.emit('createSoftbody');
@@ -249,6 +250,6 @@ window.onload = ()=>{
     socket.on('createSoftbody', () => {
         isLocal = false; // 受信したフラグを使用して isLocal を更新
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
-        createSoftbody(); 
+        createSoftbody(null, false); 
     });
 }
