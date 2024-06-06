@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-
 const app = express();
 const server = http.Server(app);
 const io = socketIo(server);
@@ -29,10 +28,12 @@ io.on('connection', (socket) => {
   // 'ballsmove' というイベント名で受信
   socket.on('ballsmove', (ballsData) => {
     //console.log('balls: ', ballsData);
-    // 'ballsupdate' というイベントを発火
     io.emit('ballsupdate', ballsData);
   });
-
+// クライアントからのボール生成イベントを受信し、他のクライアントに通知
+  socket.on('createSoftbody', () => {
+    socket.broadcast.emit('createSoftbody');
+  });
 });
 
 
