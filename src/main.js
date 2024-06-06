@@ -22,6 +22,7 @@ const socket = io();
 
 let Matterbeads = [];
 let Matterframe = [];
+let isLocal = true; // 自分側のボールかどうかを判定するフラグ
 
 window.onload = ()=>{
 
@@ -84,14 +85,14 @@ window.onload = ()=>{
           xx = 60,
           yy = HEIGHT/2;
 
-    let createSoftbody = () => {
+    let createSoftbody = (initialPositions, isLocalCreation = true) => {
 
         let Matterballs = [];
-        //let Pixiballs = [];
 
         for(let i = 0; i < columns * 2; i++){
+            let ball;
             if(i < columns){
-                let ball = Bodies.circle(xx + i * columnGap, yy, radius, {
+                ball = Bodies.circle(xx + i * columnGap, yy, radius, {
                     restitution: 0,
                     friction: 0.00001,
                     density: 0.01,
@@ -100,11 +101,13 @@ window.onload = ()=>{
                         category: lquidCategory
                     },
                 });
+                if (initialPositions) {
+                    Body.setPosition(ball, initialPositions[i]);
+                }
                 Composite.add(engine.world, ball);
                 Matterballs.push(ball);
-            }else{
-                //2段目
-                let ball = Bodies.circle(xx + (i - columns) * columnGap, yy + rowGap, radius, {
+            } else {
+                ball = Bodies.circle(xx + (i - columns) * columnGap, yy + rowGap, radius, {
                     restitution: 0,
                     friction: 0.00001,
                     density: 0.01,
@@ -113,11 +116,14 @@ window.onload = ()=>{
                         category: lquidCategory
                     },
                 });
+                if (initialPositions) {
+                    Body.setPosition(ball, initialPositions[i]);
+                }
                 Composite.add(engine.world, ball);
                 Matterballs.push(ball);
             }
-            Matterframe.push(Matterballs);
         }
+        Matterframe.push(Matterballs);
 
         //〇を接続
         for(let a = 1; a < columns; a++) {
@@ -160,7 +166,7 @@ window.onload = ()=>{
             length: 1
         })
         Composite.add(engine.world, [chainConstraint4]);
-
+        
         //大きな円の中に小さな円を配置
         const num = 13;
         const radius2 = 8;
@@ -188,53 +194,42 @@ window.onload = ()=>{
             g.clear(); 
             g.beginFill(0xffffff);
 
+            // Matterframeのオブジェクトの位置に円を描画
             for(let i = 0; i < Matterframe.length; i++){
                 Matterframe[i].forEach(p => {
-                    g.drawCircle(p.position.x, p.position.y, radius);
+                    g.drawCircle(p.position.x, p.position.y, radius,{isStatic: true});
                 });
             }
+            // Matterbeadsのオブジェクトの位置に円を描画
             for(let i = 0; i < Matterbeads.length; i++){
-                g.drawCircle(Matterbeads[i].position.x, Matterbeads[i].position.y, radius2);
+                g.drawCircle(Matterbeads[i].position.x, Matterbeads[i].position.y, radius2,{isStatic: true});
             }
             g.endFill();
         
-            // サーバーにballsの座標を送信
+            // サーバーに現在のballsの座標を送信
             const ballsData = {
                 Matterballs: Matterframe.map(frame => frame.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
                 Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
             };
             socket.emit('ballsmove', ballsData);
         });
-        // Events.on(engine, 'afterUpdate',() => {
-        //     if(!g) {
-        //         // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
-        //         g = new PIXI.Graphics(); 
-        //         app.stage.addChild(g);
-        //     }
-        //     g.clear(); 
-        //     g.beginFill(0xffffff);
 
-        //     //ball
-        //     for (let i = 0; i < Matterframe.length; i++) {
-        //         for (let j = 0; j < Matterframe[i].length; j++) {
-        //             const p = Matterframe[i][j];
-        //             g.drawCircle(p.position.x, p.position.y, radius);
-        //         }
-        //     }
-
-        //     //bead
-        //     for (let i = 0; i < Matterbeads.length; i++) {
-        //         const p = Matterbeads[i];
-        //         g.drawCircle(p.position.x, p.position.y, radius2);
-        //     }
-        //     g.endFill();
-        // });
+        // // マウスコンストレイントを追加するかどうかを決定
+        // if (!isLocalCreation) {
+        //     Composite.add(engine.world, mouseConstraint);
+        // }
+     
     }
 
-    // クリックしたらでてくるよ
-    // document.getElementById('sendButton').addEventListener('click', () => {
-    //     createSoftbody();
-    // });
+    //ボタンクリックで生成
+    document.getElementById('sendButton').addEventListener('click', () => {
+        isLocal = true;
+        // 生成されたボールが自分の画面で生成されたものであることを示すフラグを true に設定
+        createSoftbody();
+        // サーバーに自分がボールを生成したことを通知し、
+        //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
+        socket.emit('createSoftbody');
+    });
 
     //createSoftbody();
 
@@ -248,5 +243,12 @@ window.onload = ()=>{
         for (let i = 0; i < Matterbeads.length; i++) {
             Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
         }
+    });
+
+    // 他のクライアントがballsを生成したことを受信
+    socket.on('createSoftbody', () => {
+        isLocal = false; // 受信したフラグを使用して isLocal を更新
+        // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
+        createSoftbody(); 
     });
 }
