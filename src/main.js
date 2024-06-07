@@ -20,9 +20,15 @@ const MouseConstraint = Matter.MouseConstraint;
 
 const socket = io();
 
+// a-z のランダムな文字
+let clientId = String.fromCharCode(97 + Math.floor(Math.random() * 26)); 
+
+socket.on('connect', () => {
+    socket.emit('registerClient', clientId);
+});
+
 let Matterbeads = [];
 let Matterframe = [];
-let isLocal = true; // 自分側のボールかどうかを判定するフラグ
 
 window.onload = ()=>{
 
@@ -73,21 +79,24 @@ window.onload = ()=>{
             render: {visible: false}
         }
     });
-    //Composite.add(engine.world, mouseConstraint);
+    Composite.add(engine.world, mouseConstraint);
 
     // add bodies
     const lquidCategory = 0x0004;
-    const columns = 7, //〇の数（※奇数）
-          rows = 2, //2で固定
-          columnGap = 1,
-          rowGap = 2,
-          radius = 10,
-          xx = 60,
-          yy = HEIGHT/2;
+    const columns = 7; //〇の数（※奇数）
+    const  rows = 2; //2で固定
+    const  columnGap = 1;
+    const  rowGap = 2;
+    const  radius = 10;
+    const  xx = 60;
+    const  yy = HEIGHT/2;
 
-    let createSoftbody = (initialPositions, isLocalCreation = true) => {
+    let createSoftbody = (initialPositions, clientIdentifier) => {
+        
+        console.log(`Softbody created by client: ${clientIdentifier}`);
 
         let Matterballs = [];
+        let isStatic = clientIdentifier !== clientId; // 他クライアントのSoftbodyは静的
 
         for(let i = 0; i < columns * 2; i++){
             let ball;
@@ -100,6 +109,7 @@ window.onload = ()=>{
                     collisionFilter: {
                         category: lquidCategory
                     },
+                    isStatic: isStatic
                 });
                 if (initialPositions) {
                     Body.setPosition(ball, initialPositions[i]);
@@ -115,6 +125,7 @@ window.onload = ()=>{
                     collisionFilter: {
                         category: lquidCategory
                     },
+                    isStatic: isStatic
                 });
                 if (initialPositions) {
                     Body.setPosition(ball, initialPositions[i]);
@@ -122,6 +133,8 @@ window.onload = ()=>{
                 Composite.add(engine.world, ball);
                 Matterballs.push(ball);
             }
+            // クライアントの識別子を追加
+            ball.clientIdentifier = clientIdentifier;
         }
         Matterframe.push(Matterballs);
 
@@ -183,13 +196,6 @@ window.onload = ()=>{
             Matterbeads.push(bead);
         }
 
-        // マウスコンストレイントを追加するかどうかを決定
-        if (isLocalCreation) {
-            Composite.add(engine.world, mouseConstraint);
-        }
-
-        // エンジンをUpdateした後の処理を書く
-        // 動いたmatterの座標を取り出す内容
         Events.on(engine, 'afterUpdate', () => {
             if(!g) {
                 // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
@@ -213,43 +219,78 @@ window.onload = ()=>{
         
             // サーバーに現在のballsの座標を送信
             const ballsData = {
-                Matterballs: Matterframe.map(frame => frame.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
+                clientId: clientId,
+                Matterballs: Matterframe.map(frame => frame.filter(ball => ball.clientIdentifier === clientId).map(ball => ({ x: ball.position.x, y: ball.position.y }))),
                 Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
+                //Matterballs: Matterframe.map(frame => frame.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
+                // Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
             };
             socket.emit('ballsmove', ballsData);
         });
-
-     
     }
 
     //ボタンクリックで生成
     document.getElementById('sendButton').addEventListener('click', () => {
-        isLocal = true;
-        // 生成されたボールが自分の画面で生成されたものであることを示すフラグを true に設定
-        createSoftbody(null, true);
-        // サーバーに自分がボールを生成したことを通知し、
+        createSoftbody(null, clientId);
         //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
-        socket.emit('createSoftbody');
+        socket.emit('createSoftbody', clientId);
     });
 
     //createSoftbody();
 
     // サーバーから座標データを受信してballsの位置を更新
+    // socket.on('ballsupdate', (ballsData) => {
+    //     for (let i = 0; i < Matterframe.length; i++) {
+    //         Matterframe[i].forEach((p, index) => {
+    //             Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
+    //         });
+    //     }
+    //     for (let i = 0; i < Matterbeads.length; i++) {
+    //         Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+    //     }
+    // });
+
+    // socket.on('ballsupdate', (ballsData) => {
+    //     for (let i = 0; i < Matterframe.length; i++) {
+    //         Matterframe[i].forEach((p, index) => {
+    //             if (p.clientIdentifier !== clientId) {
+    //                 Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
+    //                 p.isStatic = true;
+    //             }
+    //         });
+    //     }
+    //     for (let i = 0; i < Matterbeads.length; i++) {
+    //         Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+    //     }
+    // });
+
     socket.on('ballsupdate', (ballsData) => {
-        for (let i = 0; i < Matterframe.length; i++) {
-            Matterframe[i].forEach((p, index) => {
-                Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
-            });
-        }
-        for (let i = 0; i < Matterbeads.length; i++) {
-            Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+        if (ballsData && ballsData.Matterballs && ballsData.Matterbeads) {
+            // Matterballsの更新
+            for (let i = 0; i < Matterframe.length; i++) {
+                if (ballsData.Matterballs[i]) { // ballsData.Matterballs[i]が存在するかチェック
+                    Matterframe[i].forEach((p, index) => {
+                        if (p.clientIdentifier !== clientId && ballsData.Matterballs[i][index]) { // ballsData.Matterballs[i][index]が存在するかチェック
+                            Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
+                            p.isStatic = true;
+                        }
+                    });
+                }
+            }
+            // Matterbeadsの更新
+            for (let i = 0; i < Matterbeads.length; i++) {
+                if (ballsData.Matterbeads[i]) { // ballsData.Matterbeads[i]が存在するかチェック
+                    Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+                }
+            }
+        } else {
+            console.error('Invalid ballsData received:', ballsData);
         }
     });
 
     // 他のクライアントがballsを生成したことを受信
-    socket.on('createSoftbody', () => {
-        isLocal = false; // 受信したフラグを使用して isLocal を更新
+    socket.on('createSoftbody', (remoteClientId) => {
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
-        createSoftbody(null, false); 
+        createSoftbody(null, remoteClientId); 
     });
 }
