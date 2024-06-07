@@ -25,14 +25,21 @@ server.listen(PORT, () => {
 io.on('connection', (socket) => {
   console.log('connected');
 
+  let clientId;
+  socket.on('registerClient', (id) => {
+    clientId = id;
+    console.log(`Client registered: ${clientId}`);
+});
+  
   // 'ballsmove' というイベント名で受信
   socket.on('ballsmove', (ballsData) => {
     //console.log('balls: ', ballsData);
     io.emit('ballsupdate', ballsData);
+    socket.broadcast.emit('ballsupdate', ballsData);
   });
-// クライアントからのボール生成イベントを受信し、他のクライアントに通知
-  socket.on('createSoftbody', () => {
-    socket.broadcast.emit('createSoftbody');
+  // クライアントからのボール生成イベントを受信し、他のクライアントに通知
+  socket.on('createSoftbody', (id) => {
+    socket.broadcast.emit('createSoftbody', id);
   });
 });
 
