@@ -29,20 +29,17 @@ socket.on('connect', () => {
 
 let Matterbeads = [];
 let Matterframe = [];
+let messages = []; // メッセージのリスト
 
 window.onload = ()=>{
-
     // Pixi.js
     const app = new PIXI.Application({width: WIDTH, height: HEIGHT});
     document.body.appendChild(app.view);
     let g;
 
     //matter.js
-	// 物理エンジン本体のクラス
 	const engine = Engine.create();
     engine.world.gravity.y = -0.1;
-
-    // 画面を描画するクラス
 	const render = Render.create({
         element: document.body,
         engine: engine,
@@ -59,7 +56,6 @@ window.onload = ()=>{
 	});
 	Render.run(render);
 
-    // 物理世界を更新
 	const runner = Runner.create();
 	Runner.run(runner, engine);
 
@@ -89,14 +85,16 @@ window.onload = ()=>{
     const  rowGap = 2;
     const  radius = 10;
     const  xx = 60;
-    const  yy = HEIGHT/2;
+    let  yy = HEIGHT/2 - 100;
+    let yyOffset = 0; // Y座標オフセット
 
-    let createSoftbody = (initialPositions, clientIdentifier) => {
-        
+    let createSoftbody = (initialPositions, clientIdentifier) => { 
         console.log(`Softbody created by client: ${clientIdentifier}`);
 
         let Matterballs = [];
         let isStatic = clientIdentifier !== clientId; // 他クライアントのSoftbodyは静的
+
+        yy += yyOffset; // 各ソフトボディ生成時にY座標をオフセット
 
         for(let i = 0; i < columns * 2; i++){
             let ball;
@@ -137,6 +135,8 @@ window.onload = ()=>{
             ball.clientIdentifier = clientIdentifier;
         }
         Matterframe.push(Matterballs);
+
+        yyOffset += 10; // 次のソフトボディ生成時にY座標を下にずらす
 
         //〇を接続
         for(let a = 1; a < columns; a++) {
@@ -194,6 +194,19 @@ window.onload = ()=>{
             });   
             Composite.add(engine.world, bead);
             Matterbeads.push(bead);
+
+            // beadsをチェーンで繋ぐ処理
+            // if (i > 0) { // 最初のbeadは飛ばす
+            //     const chainConstraint_b = Constraint.create({
+            //         bodyA: Matterbeads[i - 1],
+            //         pointA: { x: radius2, y: 0 },
+            //         bodyB: bead,
+            //         pointB: { x: -radius2, y: 0 },
+            //         stiffness: 0.9,
+            //         length: 1
+            //     });
+            //     Composite.add(engine.world, chainConstraint_b);
+            // }
         }
 
         Events.on(engine, 'afterUpdate', () => {
@@ -229,41 +242,45 @@ window.onload = ()=>{
         });
     }
 
+    // Pixi.jsテキストスタイル
+    const textStyle = new PIXI.TextStyle({
+        fontFamily: 'Arial',
+        fontSize: 14,
+        fill: 'white'
+    });
+
+    // メッセージを描画する関数
+    let displayMessage = (message, position) => {
+        let text = new PIXI.Text(message, textStyle);
+        text.x = position.x; // ソフトボディの位置に合わせる
+        text.y = position.y;
+        app.stage.addChild(text);
+        messages.push(text);
+    }
+
     //ボタンクリックで生成
     document.getElementById('sendButton').addEventListener('click', () => {
         createSoftbody(null, clientId);
         //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
         socket.emit('createSoftbody', clientId);
+
+        let inputText = document.getElementById('inputText').value;
+        if (inputText) {
+            let lastBall = Matterframe[Matterframe.length - 1][0]; // 最後に生成されたソフトボディの最初のボールの位置を取得
+            let position = { x: lastBall.position.x, y: lastBall.position.y };
+            displayMessage(inputText, position);
+            socket.emit('newMessage', { message: inputText, position: position });
+            document.getElementById('inputText').value = ''; // 入力フィールドをクリア
+        }
+
     });
 
-    //createSoftbody();
+    //text
+    socket.on('newMessage', (data) => {
+        displayMessage(data.message, data.position);
+    });
 
-    // サーバーから座標データを受信してballsの位置を更新
-    // socket.on('ballsupdate', (ballsData) => {
-    //     for (let i = 0; i < Matterframe.length; i++) {
-    //         Matterframe[i].forEach((p, index) => {
-    //             Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
-    //         });
-    //     }
-    //     for (let i = 0; i < Matterbeads.length; i++) {
-    //         Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
-    //     }
-    // });
-
-    // socket.on('ballsupdate', (ballsData) => {
-    //     for (let i = 0; i < Matterframe.length; i++) {
-    //         Matterframe[i].forEach((p, index) => {
-    //             if (p.clientIdentifier !== clientId) {
-    //                 Body.setPosition(p, { x: ballsData.Matterballs[i][index].x, y: ballsData.Matterballs[i][index].y });
-    //                 p.isStatic = true;
-    //             }
-    //         });
-    //     }
-    //     for (let i = 0; i < Matterbeads.length; i++) {
-    //         Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
-    //     }
-    // });
-
+    //softbody
     socket.on('ballsupdate', (ballsData) => {
         if (ballsData && ballsData.Matterballs && ballsData.Matterbeads) {
             // Matterballsの更新
@@ -293,4 +310,5 @@ window.onload = ()=>{
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
         createSoftbody(null, remoteClientId); 
     });
+  
 }
