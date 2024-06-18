@@ -136,6 +136,11 @@ window.onload = ()=>{
         }
         Matterframe.push(Matterballs);
 
+        // グラフィックスオブジェクトを作成し、Pixiのステージに追加
+        // let graphics = new PIXI.Graphics();
+        // app.stage.addChild(graphics);
+        // Matterframe.push({ balls: Matterballs, graphics: graphics });
+
         yyOffset += 10; // 次のソフトボディ生成時にY座標を下にずらす
 
         //〇を接続
@@ -208,39 +213,43 @@ window.onload = ()=>{
             //     Composite.add(engine.world, chainConstraint_b);
             // }
         }
-
-        Events.on(engine, 'afterUpdate', () => {
-            if(!g) {
-                // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
-                g = new PIXI.Graphics(); 
-                app.stage.addChild(g);
-            }
-            g.clear(); 
-            g.beginFill(0xffffff);
-
-            // Matterframeのオブジェクトの位置に円を描画
-            for(let i = 0; i < Matterframe.length; i++){
-                Matterframe[i].forEach(p => {
-                    g.drawCircle(p.position.x, p.position.y, radius,{isStatic: true});
-                });
-            }
-            // Matterbeadsのオブジェクトの位置に円を描画
-            for(let i = 0; i < Matterbeads.length; i++){
-                g.drawCircle(Matterbeads[i].position.x, Matterbeads[i].position.y, radius2,{isStatic: true});
-            }
-            g.endFill();
-        
-            // サーバーに現在のballsの座標を送信
-            const ballsData = {
-                clientId: clientId,
-                Matterballs: Matterframe.map(frame => frame.filter(ball => ball.clientIdentifier === clientId).map(ball => ({ x: ball.position.x, y: ball.position.y }))),
-                Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
-                //Matterballs: Matterframe.map(frame => frame.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
-                // Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
-            };
-            socket.emit('ballsmove', ballsData);
-        });
     }
+    
+    Events.on(engine, 'afterUpdate', () => {
+        // pixi.js
+        if(!g) {
+            // 繰り返し描画が呼ばれるので、Graphicsは初回に一度だけ作って使い回す
+            g = new PIXI.Graphics(); 
+            app.stage.addChild(g);
+        }
+        g.clear(); 
+        g.beginFill(0xffffff);
+
+        if (Matterframe.length > 0) {
+            let firstFrame = Matterframe[0]; // 最初のボール
+            g.lineStyle(2, 0xffffff); // 輪っかの線のスタイルを設定
+
+            // 楕円の描画を開始
+            g.moveTo(firstFrame[0].position.x, firstFrame[0].position.y);
+            for (let i = 1; i < columns; i++) {
+                g.lineTo(firstFrame[i].position.x, firstFrame[i].position.y);
+            }
+            g.lineTo(firstFrame[2*columns - 1].position.x, firstFrame[2*columns - 1].position.y);
+            for (let j = 2*columns - 2; j >= columns; j--) {
+                g.lineTo(firstFrame[j].position.x, firstFrame[j].position.y);
+            } 
+            g.lineTo(firstFrame[0].position.x, firstFrame[0].position.y); 
+        }
+        g.endFill();
+    
+        // サーバーに現在のballsの座標を送信
+        const ballsData = {
+            clientId: clientId,
+            Matterballs: Matterframe.map(frame => frame.filter(ball => ball.clientIdentifier === clientId).map(ball => ({ x: ball.position.x, y: ball.position.y }))),
+            Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
+        };
+        socket.emit('ballsmove', ballsData);
+    });
 
     // Pixi.jsテキストスタイル
     const textStyle = new PIXI.TextStyle({
