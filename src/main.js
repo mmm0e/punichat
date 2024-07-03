@@ -79,14 +79,14 @@ window.onload = ()=>{
     const lquidCategory = 0x0004;
     const columns = 13; //〇の数（※奇数）
     const  rows = 2; //2で固定
-    const  columnGap = 1;
-    const  rowGap = 2;
+    const  columnGap = 2;
+    const  rowGap = 20;
     const  radius = 6;
     const  xx = 60;
-    let  yy = HEIGHT/2 - 100;
+    let  yy = 100;
     let yyOffset = 0; // Y座標オフセット
 
-    let createSoftbody = (initialPositions, clientIdentifier) => { 
+    let createSoftbody = (initialPositions, clientIdentifier, message) => { 
         console.log(`Softbody created by client: ${clientIdentifier}`);
 
         let Matterballs = [];
@@ -140,14 +140,117 @@ window.onload = ()=>{
             // クライアントの識別子を追加
             ball.clientIdentifier = clientIdentifier;
         }
-        //Matterframe.push(Matterballs);
 
         // グラフィックスオブジェクトを作成し、Pixiのステージに追加
         let graphics = new PIXI.Graphics();
         app.stage.addChild(graphics);
-        Matterframe.push({ balls: Matterballs, graphics: graphics });
+
+        // メッセージがあればテキストオブジェクトを作成し、最初のボールに付随させる
+        let text = null;
+        if (message) {
+            text = new PIXI.Text(message, textStyle);
+            app.stage.addChild(text);
+        }
+        Matterframe.push({ balls: Matterballs, graphics: graphics , text: text});
 
         yyOffset += 10; // 次のソフトボディ生成時にY座標を下にずらす
+
+        //大きな円の中に小さな円を配置
+        const num = 20;
+        const radius2 = 10;
+        const x = Matterballs[1].position.x;
+        const y = (Matterballs[0].position.y + Matterballs[columns].position.y) / 2;
+
+        let bead1 = Bodies.circle(x, y, radius2, {
+            restitution: 0,
+            friction: 0.00001,
+            density: 0.01,
+            frictionAir: 0.0011,
+            collisionFilter: {
+                category: lquidCategory
+            },
+            isStatic: isStatic
+        });
+
+        let bead2 = Bodies.circle(x + radius2, y - radius2, radius2, {
+            restitution: 0,
+            friction: 0.00001,
+            density: 0.01,
+            frictionAir: 0.0011,
+            collisionFilter: {
+                category: lquidCategory
+            },
+            isStatic: isStatic
+        });
+
+        let bead3 = Bodies.circle(x + 2*radius2, y, radius2, {
+            restitution: 0,
+            friction: 0.00001,
+            density: 0.01,
+            frictionAir: 0.0011,
+            collisionFilter: {
+                category: lquidCategory
+            },
+            isStatic: isStatic
+        });
+
+        let bead4 = Bodies.circle(x + radius2, y + radius2, radius2, {
+            restitution: 0,
+            friction: 0.00001,
+            density: 0.01,
+            frictionAir: 0.0011,
+            collisionFilter: {
+                category: lquidCategory
+            },
+            isStatic: isStatic
+        });
+
+        Matterbeads.push(bead1,bead2,bead3,bead4);
+        Composite.add(engine.world, bead1, bead2, bead3, bead4);
+
+        const Constraint1 = Constraint.create({
+            bodyA: bead1,
+            pointA: { x: radius2, y: 0 },
+            bodyB: bead2,
+            pointB: { x: -radius2, y: 0 },
+            stiffness: 0.9,
+            length: 1
+        })
+        Composite.add(engine.world, [Constraint1]);
+
+        const Constraint2 = Constraint.create({
+            bodyA: bead2,
+            pointA: { x: radius2, y: 0 },
+            bodyB: bead3,
+            pointB: { x: -radius2, y: 0 },
+            stiffness: 0.9,
+            length: 1
+        })
+        Composite.add(engine.world, [Constraint2]);
+
+
+
+        // Matter.Composites.softBody で新しいソフトボディを作成
+        // const softBody = Composites.softBody(
+        //     x, y,
+        //     8, 3, // columns, rows
+        //     0, 0, // columnGap, rowGap
+        //     false, // crossBrace
+        //     radius2, // particleRadius
+        //     {collisionFilter: {
+        //             category: lquidCategory
+        //         }
+        //     },
+        //     {
+        //         stiffness: 0.9,
+        //         render: { visible: false }
+        //     }
+        // );
+        // // ソフトボディのボールを追加
+        // softBody.bodies.forEach(ball => {
+        //     Matterbeads.push(ball);
+        // });
+        // Composite.add(engine.world, softBody);
 
         //〇を接続
         for(let a = 1; a < columns; a++) {
@@ -191,35 +294,16 @@ window.onload = ()=>{
         })
         Composite.add(engine.world, [chainConstraint4]);
         
-        //大きな円の中に小さな円を配置
-        const num = 20;
-        const radius2 = 8;
-        const x = Matterballs[(columns - 1) / 2].position.x;
-        const y = (Matterballs[0].position.y + Matterballs[columns].position.y) / 2;
-
-        for (let i = 0; i < num; i++) {
-            const bead = Bodies.circle(x, y, radius2, {
-                collisionFilter: {
-                    category: lquidCategory
-                },
-            });   
-            Composite.add(engine.world, bead);
-            Matterbeads.push(bead);
-
-            // beadsをチェーンで繋ぐ処理
-            // if (i > 0) { // 最初のbeadは飛ばす
-            //     const chainConstraint_b = Constraint.create({
-            //         bodyA: Matterbeads[i - 1],
-            //         pointA: { x: radius2, y: 0 },
-            //         bodyB: bead,
-            //         pointB: { x: -radius2, y: 0 },
-            //         stiffness: 0.9,
-            //         length: 1
-            //     });
-            //     Composite.add(engine.world, chainConstraint_b);
-            // }
-        }
-    }
+        // for (let i = 0; i < num; i++) {
+        //     const bead = Bodies.circle(x, y, radius2, {
+        //         collisionFilter: {
+        //             category: lquidCategory
+        //         },
+        //     });   
+        //     Composite.add(engine.world, bead);
+        //     Matterbeads.push(bead);
+        // }
+    };
 
     Events.on(engine, 'afterUpdate', () => {
         // pixi.js
@@ -245,6 +329,12 @@ window.onload = ()=>{
                         g.lineTo(balls[0].position.x, balls[0].position.y); 
                     }
                     g.endFill();
+                }
+                // テキストの位置を更新
+                if (frame.text && frame.balls.length > 0) {
+                    let ball = frame.balls[0];
+                    frame.text.x = ball.position.x;
+                    frame.text.y = ball.position.y - 20; // テキストがボールの上に表示されるようにオフセット
                 }
             });
         }
@@ -277,36 +367,27 @@ window.onload = ()=>{
 
     //ボタンクリックで生成
     document.getElementById('sendButton').addEventListener('click', () => {
-        createSoftbody(null, clientId);
-        //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
-        socket.emit('createSoftbody', clientId);
+        // createSoftbody(null, clientId);
+        // //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
+        // socket.emit('createSoftbody', clientId);
 
         let inputText = document.getElementById('inputText').value;
-        if (inputText) {
-            let lastFrame = Matterframe[Matterframe.length - 1];
-            if (lastFrame) {
-                let balls = lastFrame.balls;
-                let position = {
-                    x: balls.reduce((sum, ball) => sum + ball.position.x, 0) / balls.length,
-                    y: balls.reduce((sum, ball) => sum + ball.position.y, 0) / balls.length
-                };
-                displayMessage(inputText, position);
-                socket.emit('newMessage', { message: inputText, position: position });
-                document.getElementById('inputText').value = ''; // 入力フィールドをクリア
-            }
-        }
+        createSoftbody(null, clientId, inputText);
+        socket.emit('createSoftbody', { clientId: clientId, message: inputText });
+        document.getElementById('inputText').value = ''; // 入力フィールドをクリア
     });
 
     //text
     socket.on('newMessage', (data) => {
-        displayMessage(data.message, data.position);
+        //displayMessage(data.message, data.position);
+        createSoftbody(null, data.clientId, data.message);
     });
 
     //softbody
     // 他のクライアントがballsを生成したことを受信
-    socket.on('createSoftbody', (remoteClientId) => {
+    socket.on('createSoftbody', (data) => {
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
-        createSoftbody(null, remoteClientId); 
+        createSoftbody(null, data.clientId, data.message); 
     });
 
     socket.on('ballsupdate', (ballsData) => {
