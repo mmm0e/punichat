@@ -94,7 +94,7 @@ window.onload = ()=>{
         console.log(`Softbody created by client: ${clientIdentifier}`);
 
         let Matterballs = [];
-        let isStatic = clientIdentifier !== clientId; // 他クライアントのSoftbodyは静的
+        let isStatic = clientIdentifier !== clientId; // 他クライアントのSoftbodyは動的
 
         let yyOffset = 30; // Y座標オフセットの増加量を10に設定
         if (Matterframe.length > 0) {
@@ -119,7 +119,7 @@ window.onload = ()=>{
                 });
                 if (initialPositions) {
                     Body.setPosition(ball, initialPositions[i]);
-                    // 他のクライアントのボールは静的に設定
+                    // 他のクライアントのボールは動的に設定
                     if (clientIdentifier !== clientId) {
                         ball.isStatic = true;
                     }
@@ -139,7 +139,7 @@ window.onload = ()=>{
                 });
                 if (initialPositions) {
                     Body.setPosition(ball, initialPositions[i]);
-                    // 他のクライアントのボールは静的に設定
+                    // 他のクライアントのボールは動的に設定
                     if (clientIdentifier !== clientId) {
                         ball.isStatic = true;
                     }
@@ -170,10 +170,10 @@ window.onload = ()=>{
                 isStatic: isStatic
             });
             if (initialPositions) {
-                Body.setPosition(ball2, initialPositions[i]);
-                // 他のクライアントのボールは静的に設定
+                Body.setPosition(ball2, initialPositions[j]);
+                // 他のクライアントのボールは動的に設定
                 if (clientIdentifier !== clientId) {
-                    ball.isStatic = true;
+                    ball2.isStatic = true;
                 }
             }
             Composite.add(engine.world, ball2);
@@ -195,10 +195,10 @@ window.onload = ()=>{
                 isStatic: isStatic
             });
             if (initialPositions) {
-                Body.setPosition(ball3, initialPositions[i]);
+                Body.setPosition(ball3, initialPositions[j]);
                 // 他のクライアントのボールは静的に設定
                 if (clientIdentifier !== clientId) {
-                    ball.isStatic = true;
+                    ball3.isStatic = true;
                 }
             }
             Composite.add(engine.world, ball3);
@@ -207,10 +207,7 @@ window.onload = ()=>{
             ball3.clientIdentifier = clientIdentifier;
         }
 
-
-
         //大きな円の中に小さな円を配置
-        //const num = 12;
         const radius2 = 7;
         const x = Matterballs[1].position.x;
         const y = Matterballs[1].position.y + radius;
@@ -359,17 +356,25 @@ window.onload = ()=>{
         }
         Matterframe.push({ balls: Matterballs, graphics: graphics, text: text });
 
+        // 生成されたソフトボディ情報を他のクライアントに送信
+        if (clientIdentifier === clientId) {
+            socket.emit('createSoftbody', {
+                clientId: clientId,
+                message: message,
+                initialPositions: Matterballs.map(ball => ({ x: ball.position.x, y: ball.position.y })),
+                beadPositions: softBody.bodies.map(ball => ({ x: ball.position.x, y: ball.position.y }))
+            });
+        }
+
     };
 
     let getSoftBodyCenter = (softBody) => {
         let totalX = 0;
         let totalY = 0;
-    
         softBody.bodies.forEach(body => {
             totalX += body.position.x;
             totalY += body.position.y;
         });
-    
         return {
             x: totalX / softBody.bodies.length,
             y: totalY / softBody.bodies.length
@@ -409,13 +414,23 @@ window.onload = ()=>{
                 }
             });
         }
-
-        // pixi.js
-        // サーバーに現在のballsの座標を送信
         const ballsData = {
             clientId: clientId,
-            Matterballs: Matterframe.map(frame => frame.balls.map(ball => ({ x: ball.position.x, y: ball.position.y }))),
-            Matterbeads: Matterbeads.map(bead => ({ x: bead.position.x, y: bead.position.y }))
+            Matterballs: Matterframe.map(frame => frame.balls.map(ball => ({
+                x: ball.position.x,
+                y: ball.position.y,
+                clientIdentifier: ball.clientIdentifier
+            }))),
+            Matterballs2: Matterballs2.map(ball2 => ({
+                x: ball2.position.x,
+                y: ball2.position.y,
+                clientIdentifier: ball2.clientIdentifier
+            })),
+            Matterbeads: Matterbeads.map(bead => ({
+                x: bead.position.x,
+                y: bead.position.y,
+                clientIdentifier: bead.clientIdentifier
+            }))
         };
         socket.emit('ballsmove', ballsData);
     });
@@ -458,11 +473,16 @@ window.onload = ()=>{
     // 他のクライアントがballsを生成したことを受信
     socket.on('createSoftbody', (data) => {
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
-        createSoftbody(null, data.clientId, data.message); 
+        //createSoftbody(null, data.clientId, data.message); 
+
+        // 他のクライアントの情報を使ってソフトボディを生成
+        if (data.clientId !== clientId) {
+            createSoftbody(data.initialPositions, data.clientId, data.message);
+        }
     });
 
     socket.on('ballsupdate', (ballsData) => {
-        if (ballsData && ballsData.Matterballs && ballsData.Matterbeads) {
+        if (ballsData && ballsData.Matterballs && ballsData.Matterbeads && ballsData.Matterballs2) {
             // Matterballsの更新
             for (let i = 0; i < Matterframe.length; i++) {
                 let frame = Matterframe[i];
@@ -471,23 +491,57 @@ window.onload = ()=>{
                 if (remoteBalls) { // remoteBallsが存在するかチェック
                     frame.balls.forEach((p, index) => {
                         let remoteBall = remoteBalls[index];
-                        if (remoteBall) {
+                        // if (remoteBall) {
+                        //     Body.setPosition(p, { x: remoteBall.x, y: remoteBall.y });
+                        //     if (p.clientIdentifier !== clientId) {
+                        //         p.isStatic = true; // 他クライアントのボールは静的に設定
+                        //     } else {
+                        //         p.isStatic = false; // 自分のクライアントのボールは動的に設定
+                        //     }
+                        if (remoteBall && p.clientIdentifier !== clientId) {
                             Body.setPosition(p, { x: remoteBall.x, y: remoteBall.y });
-                            if (p.clientIdentifier !== clientId) {
-                                p.isStatic = true; // 他クライアントのボールは静的に設定
-                            } else {
-                                p.isStatic = false; // 自分のクライアントのボールは動的に設定
-                            }
                         }
                     });
                 }
             }
-            //Matterbeadsの更新
+
+            // Matterbeadsの更新
             for (let i = 0; i < Matterbeads.length; i++) {
-                if (ballsData.Matterbeads[i]) { // ballsData.Matterbeads[i]が存在するかチェック
-                    Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+                let remoteBead = ballsData.Matterbeads[i];
+                if (remoteBead && Matterbeads[i].clientIdentifier !== clientId) {
+                    Body.setPosition(Matterbeads[i], { x: remoteBead.x, y: remoteBead.y });
                 }
             }
+            // Matterballs2の更新
+            for (let i = 0; i < Matterballs2.length; i++) {
+                let remoteBall2 = ballsData.Matterballs2[i];
+                if (remoteBall2 && Matterballs2[i].clientIdentifier !== clientId) {
+                    Body.setPosition(Matterballs2[i], { x: remoteBall2.x, y: remoteBall2.y });
+                }
+            }
+
+            // //Matterbeadsの更新
+            // for (let i = 0; i < Matterbeads.length; i++) {
+            //     if (ballsData.Matterbeads[i]) { // ballsData.Matterbeads[i]が存在するかチェック
+            //         Body.setPosition(Matterbeads[i], { x: ballsData.Matterbeads[i].x, y: ballsData.Matterbeads[i].y });
+            //         if (Matterbeads[i].clientIdentifier !== clientId) {
+            //             Matterbeads[i].isStatic = true; // 常に静的
+            //         } else {
+            //             Matterbeads[i].isStatic = false;
+            //         }
+            //     }
+            // }
+            // // Matterballs2の更新
+            // for (let i = 0; i < Matterballs2.length; i++) {
+            //     if (ballsData.Matterballs2[i]) { // ballsData.Matterballs2[i]が存在するかチェック
+            //         Body.setPosition(Matterballs2[i], { x: ballsData.Matterballs2[i].x, y: ballsData.Matterballs2[i].y });
+            //         if (Matterballs2[i].clientIdentifier !== clientId) {
+            //             Matterballs2[i].isStatic = true; // 他クライアントのボールは静的に設定
+            //         } else {
+            //             Matterballs2[i].isStatic = false; // 自分のクライアントのボールは動的に設定
+            //         }
+            //     }
+            // }
         } else {
             console.error('Invalid ballsData received:', ballsData);
         }
