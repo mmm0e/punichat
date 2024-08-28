@@ -346,7 +346,7 @@ window.onload = ()=>{
 
         let text = null;
         if (message) {
-            let center = getSoftBodyCenter(softBody); // ソフトボディの中心を計算
+            let center = getSoftBodyCenter(Matterbeads); // ソフトボディの中心を計算
             text = new PIXI.Text(message, textStyle);
             text.anchor.set(0.5); // テキストの中心をアンカーに設定
             text.x = center.x; // ソフトボディの中心にテキストを配置
@@ -369,16 +369,16 @@ window.onload = ()=>{
 
     };
 
-    let getSoftBodyCenter = (softBody) => {
+    let getSoftBodyCenter = (Array) => {
         let totalX = 0;
         let totalY = 0;
-        softBody.bodies.forEach(body => {
-            totalX += body.position.x;
-            totalY += body.position.y;
+        Array.forEach(b => {
+            totalX += b.position.x;
+            totalY += b.position.y;
         });
         return {
-            x: totalX / softBody.bodies.length,
-            y: totalY / softBody.bodies.length
+            x: totalX / Array.length,
+            y: totalY / Array.length
         };
     };
 
@@ -417,12 +417,12 @@ window.onload = ()=>{
                     }
                     g.endFill();
                 }
-                 // テキストの位置を更新
-                if (frame.text && frame.balls.length > 0) {
-                    let center = getSoftBodyCenter(frame.beads);
-                    frame.text.x = center.x;
-                    frame.text.y = center.y; // テキストをSoftbodyの中心に表示
-                }
+                //  // テキストの位置を更新
+                // if (frame.text && frame.balls.length > 0) {
+                //     let center = getSoftBodyCenter(frame.beads);
+                //     frame.text.x = center.x;
+                //     frame.text.y = center.y; // テキストをSoftbodyの中心に表示
+                // }
             });
         }
 
@@ -465,14 +465,18 @@ window.onload = ()=>{
 
     //ボタンクリックで生成
     document.getElementById('sendButton').addEventListener('click', () => {
-        // createSoftbody(null, clientId);
-        // //生成されたボールが自分の画面で生成されたものであることを示すフラグを送信
-        // socket.emit('createSoftbody', clientId);
+        let inputElement = document.getElementById('inputText');
+        let inputText = inputElement.value.trim();
 
-        let inputText = document.getElementById('inputText').value;
-        createSoftbody(null, clientId, inputText);
-        socket.emit('createSoftbody', { clientId: clientId, message: inputText });
-        document.getElementById('inputText').value = ''; // 入力フィールドをクリア
+        if (inputText === "") {
+            inputElement.value = ""; // テキストボックスの値を空にする
+            inputElement.placeholder = "テキストを入力してください";
+        } else {
+            createSoftbody(null, clientId, inputText);
+            socket.emit('createSoftbody', { clientId: clientId, message: inputText });
+            inputElement.value = ''; // 入力フィールドをクリア
+            inputElement.placeholder = "";
+        }
     });
 
     //text
@@ -485,7 +489,7 @@ window.onload = ()=>{
     // 他のクライアントがballsを生成したことを受信
     socket.on('createSoftbody', (data) => {
         // 生成されたボールが相手の画面で生成されたものであることを示すフラグを使用してボールを生成
-        //createSoftbody(null, data.clientId, data.message); 
+        createSoftbody(null, data.clientId, data.message); 
 
         // 他のクライアントの情報を使ってソフトボディを生成
         if (data.clientId !== clientId) {
