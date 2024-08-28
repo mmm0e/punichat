@@ -156,7 +156,7 @@ window.onload = ()=>{
         const m = Matterballs[0].position.y;
         const n = Matterballs[columns - 1].position.x;
 
-        //frameの縦の部分
+        //frameの左縦の部分
         for(let j = 1; j < 4; j++){
             let ball2;
             ball2 = Bodies.circle(l, m + j * (2 * radius + 1), radius, {
@@ -181,10 +181,9 @@ window.onload = ()=>{
             // クライアントの識別子を追加
             ball2.clientIdentifier = clientIdentifier;
         }
-
+        //frameの右縦の部分
         for(let j = 1; j < 4; j++){
-            let ball3;
-            ball3 = Bodies.circle(n, m + j * (2 * radius + 1), radius, {
+            let ball3 = Bodies.circle(n, m + j * (2 * radius + 1), radius, {
                 restitution: 0,
                 friction: 0.00001,
                 density: 0.01,
@@ -354,15 +353,17 @@ window.onload = ()=>{
             text.y = center.y;
             app.stage.addChild(text);
         }
-        Matterframe.push({ balls: Matterballs, graphics: graphics, text: text });
+
+        Matterframe.push({ balls: Matterballs, balls2: Matterballs2, beads: Matterbeads, graphics: graphics, text: text });
 
         // 生成されたソフトボディ情報を他のクライアントに送信
         if (clientIdentifier === clientId) {
             socket.emit('createSoftbody', {
                 clientId: clientId,
                 message: message,
-                initialPositions: Matterballs.map(ball => ({ x: ball.position.x, y: ball.position.y })),
-                beadPositions: softBody.bodies.map(ball => ({ x: ball.position.x, y: ball.position.y }))
+                initialPositions: Matterballs.map(b => ({ x: b.position.x, y: b.position.y })),
+                initialPositions2: Matterballs2.map(b => ({ x: b.position.x, y: b.position.y })),
+                beadPositions: Matterbeads.map(b => ({ x: b.position.x, y: b.position.y }))
             });
         }
 
@@ -389,19 +390,29 @@ window.onload = ()=>{
                     let g = frame.graphics;
                     g.clear(); 
                     g.beginFill(0xffffff);
+
                     let balls = frame.balls;
-    
+                    let balls2 = frame.balls2;
+
                     if (balls.length > 0) {
                         g.lineStyle(2, 0xffffff); 
                         g.moveTo(balls[0].position.x, balls[0].position.y);
-
                         for (let i = 1; i < columns; i++) {
                             g.lineTo(balls[i].position.x, balls[i].position.y);
                         }
+
+                        g.lineTo(balls2[3].position.x, balls2[3].position.y);
+                        g.lineTo(balls2[4].position.x, balls2[4].position.y);
+                        g.lineTo(balls2[5].position.x, balls2[5].position.y);
                         g.lineTo(balls[2*columns - 1].position.x, balls[2*columns - 1].position.y);
+
                         for (let j = 2*columns - 2; j >= columns; j--) {
                             g.lineTo(balls[j].position.x, balls[j].position.y);
                         }
+
+                        g.lineTo(balls2[2].position.x, balls2[2].position.y);
+                        g.lineTo(balls2[1].position.x, balls2[1].position.y);
+                        g.lineTo(balls2[0].position.x, balls2[0].position.y);
                         g.lineTo(balls[0].position.x, balls[0].position.y); 
                     }
                     g.endFill();
@@ -414,23 +425,24 @@ window.onload = ()=>{
                 }
             });
         }
+
         const ballsData = {
             clientId: clientId,
-            Matterballs: Matterframe.map(frame => frame.balls.map(ball => ({
-                x: ball.position.x,
-                y: ball.position.y,
-                clientIdentifier: ball.clientIdentifier
+            Matterballs: Matterframe.map(frame => frame.balls.map(b => ({
+                x: b.position.x,
+                y: b.position.y,
+                clientIdentifier: b.clientIdentifier
             }))),
-            Matterballs2: Matterballs2.map(ball2 => ({
-                x: ball2.position.x,
-                y: ball2.position.y,
-                clientIdentifier: ball2.clientIdentifier
-            })),
-            Matterbeads: Matterbeads.map(bead => ({
-                x: bead.position.x,
-                y: bead.position.y,
-                clientIdentifier: bead.clientIdentifier
-            }))
+            Matterballs2: Matterframe.map(frame => frame.balls2.map(b => ({
+                x: b.position.x,
+                y: b.position.y,
+                clientIdentifier: b.clientIdentifier
+            }))),
+            Matterbeads: Matterframe.map(frame => frame.beads.map(b => ({
+                x: b.position.x,
+                y: b.position.y,
+                clientIdentifier: b.clientIdentifier
+            }))),
         };
         socket.emit('ballsmove', ballsData);
     });
@@ -482,13 +494,15 @@ window.onload = ()=>{
     });
 
     socket.on('ballsupdate', (ballsData) => {
-        if (ballsData && ballsData.Matterballs && ballsData.Matterbeads && ballsData.Matterballs2) {
+        if (ballsData && ballsData.Matterballs && ballsData.Matterballs2 && ballsData.Matterbeads) {
             // Matterballsの更新
             for (let i = 0; i < Matterframe.length; i++) {
                 let frame = Matterframe[i];
                 let remoteBalls = ballsData.Matterballs[i];
+                let remoteBalls2 = ballsData.Matterballs2[i];
+                let remoteBeads = ballsData.Matterbeads[i];
     
-                if (remoteBalls) { // remoteBallsが存在するかチェック
+                if (remoteBalls && remoteBalls2 && remoteBeads) { // remoteBallsが存在するかチェック
                     frame.balls.forEach((p, index) => {
                         let remoteBall = remoteBalls[index];
                         // if (remoteBall) {
@@ -502,23 +516,35 @@ window.onload = ()=>{
                             Body.setPosition(p, { x: remoteBall.x, y: remoteBall.y });
                         }
                     });
+                    frame.balls2.forEach((p, index) => {
+                        let remoteBall2 = remoteBalls2[index];
+                        if (remoteBall2 && p.clientIdentifier !== clientId) {
+                            Body.setPosition(p, { x: remoteBall2.x, y: remoteBall2.y });
+                        }
+                    });
+                    // frame.beads.forEach((p, index) => {
+                    //     let remoteBeads = remoteBeads[index];
+                    //     if (remoteBeads && p.clientIdentifier !== clientId) {
+                    //         Body.setPosition(p, { x: remoteBeads.x, y: remoteBeads.y });
+                    //     }
+                    // });
                 }
             }
 
             // Matterbeadsの更新
-            for (let i = 0; i < Matterbeads.length; i++) {
-                let remoteBead = ballsData.Matterbeads[i];
-                if (remoteBead && Matterbeads[i].clientIdentifier !== clientId) {
-                    Body.setPosition(Matterbeads[i], { x: remoteBead.x, y: remoteBead.y });
-                }
-            }
-            // Matterballs2の更新
-            for (let i = 0; i < Matterballs2.length; i++) {
-                let remoteBall2 = ballsData.Matterballs2[i];
-                if (remoteBall2 && Matterballs2[i].clientIdentifier !== clientId) {
-                    Body.setPosition(Matterballs2[i], { x: remoteBall2.x, y: remoteBall2.y });
-                }
-            }
+            // for (let i = 0; i < Matterbeads.length; i++) {
+            //     let remoteBead = ballsData.Matterbeads[i];
+            //     if (remoteBead && Matterbeads[i].clientIdentifier !== clientId) {
+            //         Body.setPosition(Matterbeads[i], { x: remoteBead.x, y: remoteBead.y });
+            //     }
+            // }
+            // // Matterballs2の更新
+            // for (let i = 0; i < Matterballs2.length; i++) {
+            //     let remoteBall2 = ballsData.Matterballs2[i];
+            //     if (remoteBall2 && Matterballs2[i].clientIdentifier !== clientId) {
+            //         Body.setPosition(Matterballs2[i], { x: remoteBall2.x, y: remoteBall2.y });
+            //     }
+            // }
 
             // //Matterbeadsの更新
             // for (let i = 0; i < Matterbeads.length; i++) {
