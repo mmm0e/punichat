@@ -419,7 +419,7 @@ window.onload = ()=>{
                 }
                  // テキストの位置を更新
                 if (frame.text && frame.balls.length > 0) {
-                    let center = getSoftBodyCenter(frame.softBody);
+                    let center = getSoftBodyCenter(frame.beads);
                     frame.text.x = center.x;
                     frame.text.y = center.y; // テキストをSoftbodyの中心に表示
                 }
