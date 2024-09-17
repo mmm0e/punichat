@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
+    <title>dragging</title>
+  </head>
+  <body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      // サーバーへ接続
+      const socket = io();
+
+      //pixi
+      const app = new PIXI.Application({ background: '#96C78C', resizeTo: window });
+      document.body.appendChild(app.view);
+
+      const texture = PIXI.Texture.from('https://s3-ap-northeast-1.amazonaws.com/killy-image/linestamp/4c/4caa/4caafca7026f3e6d9de193b448f155d54318ad62');
+      texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+
+      let bunnies = [];
+      for (let i = 0; i < 10; i++){
+        let bunny = createBunny(i, (0.1 * i * app.screen.width),(0.1 * i * app.screen.height));
+        bunnies.push(bunny);
+      }
+
+      let dragTarget = null;
+
+      app.stage.eventMode = 'static';
+      app.stage.hitArea = app.screen;
+      app.stage.on('pointerup', onDragEnd);
+      app.stage.on('pointerupoutside', onDragEnd);
+
+      socket.on('bunnyreceive', (id, bunnyx, bunnyy) => {
+        // IDに基づいて対応するバニーの座標を更新
+        bunnies[id].x = bunnyx;
+        bunnies[id].y = bunnyy;
+        // let bunny = bunnies.find(b => b.id === id);
+        // if (bunny) {
+        //   bunny.x = x;
+        //   bunny.y = y;
+        // }
+      });
+
+      function createBunny(id, x, y){
+        const bunny = new PIXI.Sprite(texture);
+        bunny.id = id; // IDを付与
+        bunny.eventMode = 'static';
+        bunny.cursor = 'pointer';
+        bunny.anchor.set(0.5);
+        bunny.scale.set(0.8);
+
+        // setup events for mouse + touch using the pointer events
+        bunny.on('pointerdown', onDragStart, bunny);
+
+        // move the sprite to its designated position
+        bunny.x = x;
+        bunny.y = y;
+
+        // add it to the stage
+        app.stage.addChild(bunny);
+        return bunny; // return the created bunny
+      }
+
+      function onDragMove(event){
+        if (dragTarget){
+            dragTarget.parent.toLocal(event.global, null, dragTarget.position);
+             // send the new position to the server
+            socket.emit('pointermove', dragTarget.id, dragTarget.x, dragTarget.y);
+        }
+      }
+
+      function onDragStart(){
+        this.alpha = 0.5;
+        dragTarget = this;
+        app.stage.on('pointermove', onDragMove);
+      }
+
+      function onDragEnd(){
+        if (dragTarget){
+          app.stage.off('pointermove', onDragMove);
+          dragTarget.alpha = 1;
+
+          // 最終位置をサーバーに送信
+          socket.emit('pointermove', dragTarget.id, dragTarget.x, dragTarget.y);
+
+          dragTarget = null;
+        }
+      }
+
+    </script>
+  </body>
+</html>
