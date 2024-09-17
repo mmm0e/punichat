@@ -1,0 +1,44 @@
+body {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 30px;
+  box-sizing: border-box;
+}
+
+#room {
+  width: 100%;
+  min-height: 100vh;
+  overflow: scroll;
+  background-color: rgb(113, 147, 193);
+}
+
+.chat-input {
+  position: fixed;
+  bottom: 0;
+}
+
+.box-left {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.box-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.message-box {
+  padding: 50px;
+  max-width: 40%;
+  margin: 10px;
+  border-radius: 30px;
+}
+
+.white {
+  background-color: white;
+}
+
+.green {
+  background-color: yellowgreen;
+}
