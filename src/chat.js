@@ -1,41 +1,46 @@
-let isMySelf = true;
+const app = new PIXI.Application({ autoStart: false, resizeTo: window });
+document.body.appendChild(app.view);
 
-let sendBtn = document.getElementById('sendBtn');
+PIXI.Assets.load("texture.json").then((spritesheet) => {
+    const textures = [];
+    let i;
 
-sendBtn.addEventListener('click', function() {
+    for (i = 1; i < 86; i++) {
+      // スプライトシート内のフレームキーを指定
+        const framekey = `hukidashigreen (${i}).png`;
 
-  let inputMessage = document.getElementById('inputMessage');
-  let messageText = inputMessage.value;
+        // spritesheet.textures からテクスチャを取得
+        const texture = spritesheet.textures[framekey];
 
-  if (messageText == '') {
-    return;
-  }
+        if (!texture) {
+            console.error(`Texture not found: ${framekey}`);
+            continue; // 見つからない場合はスキップ
+        }
 
-  let messageBox = document.createElement('div');
+        // spritesheet.data.frames からフレームの duration を取得
+        const frameData = spritesheet.data.frames[framekey];
+        const time = frameData ? frameData.duration : 100; // デフォルト値を 100 に設定
+        textures.push({ texture, time });
+    }
 
-  if (isMySelf) {
-    messageBox.classList.add('box-right');
-  } else {
-    messageBox.classList.add('box-left');
-  }
+    if (textures.length === 0) {
+      console.error("No valid textures found for animation.");
+      return;
+    }
 
-  let message = document.createElement('p');
-  message.textContent = messageText;
-  message.classList.add('message-box');
+    const scaling = 1;
 
-  if (isMySelf) {
-    message.classList.add('green');
-  } else {
-    message.classList.add('white');
-  }
+    // create a slow AnimatedSprite
+    const slow = new PIXI.AnimatedSprite(textures.map(t => t.texture));
 
-  messageBox.appendChild(message);
+    slow.anchor.set(0.5);
+    slow.scale.set(scaling);
+    slow.animationSpeed = 0.5;
+    slow.x = app.screen.width / 2;
+    slow.y = app.screen.height / 2;
+    slow.play();
+    app.stage.addChild(slow);
 
-  let room = document.getElementById('room');
-
-  room.appendChild(messageBox);
-
-  isMySelf = !isMySelf;
-
-  inputMessage.value = '';
-})
+    // start animating
+    app.start();
+  });
