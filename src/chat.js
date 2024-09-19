@@ -38,8 +38,26 @@ PIXI.Assets.load("texture.json").then((spritesheet) => {
     slow.animationSpeed = 0.5;
     slow.x = app.screen.width / 2;
     slow.y = app.screen.height / 2;
+    slow.loop = false;
     slow.play();
     app.stage.addChild(slow);
+    slow.gotoAndStop(0); // 初期状態は再生を停止
+
+    // アニメーションに対してインタラクションを可能にする
+    slow.interactive = true; // クリック可能にする
+    slow.buttonMode = true; // カーソルがボタン風に変わる
+
+    // クリックイベントを追加
+    slow.on('pointerdown', () => {
+        if (!slow.playing) {
+            slow.play(); // クリックされたらアニメーションを再生
+        }
+    });
+
+    // アニメーションが完了したら停止
+    slow.onComplete = () => {
+      slow.gotoAndStop(0); // 最初のフレームに戻す
+    };
 
     // start animating
     app.start();
