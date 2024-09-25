@@ -1,18 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <title>Chat</title>
     <meta charset="UTF-8" />
-    <!-- <link rel="stylesheet" href="src/styles.css"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        body { margin: 0; }
+        #chat-container { display: flex; flex-direction: column; height: 100vh; }
+        #canvas-container { flex: 1; }
+        .input-group { display: flex; padding: 10px; background-color: #f0f0f0; }
+        .input-group input { flex: 1; padding: 10px; font-size: 16px; }
+        .input-group button { padding: 10px; font-size: 16px; }
+    </style>
+    <!-- <link rel="stylesheet" href="./style.css"> -->
+    <!-- <link rel="stylesheet" href="./reset.css"> -->
 </head>
 <body>
-    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
+    <!-- <div id="message-container">
+        <div class="message-box" data-user="other">
+            <p>こんにちは！</p>
+        </div>
+        <div class="message-box" data-user="self">
+            <p>お元気ですか？</p>
+        </div>
+    </div> -->
     <div class="input-group chat-input">
-        <input id="inputMessage" type="text" class="form-control" placeholder="メッセージを入力してください" >
+        <input id="inputText" type="text" class="form-control" placeholder="メッセージを入力してください" >
         <div class="input-group-append">
             <button id="sendBtn" class="btn btn-primary" type="button">送信</button>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
     <script src="./chat.js"></script>
 </body>
 </html>
