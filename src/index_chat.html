@@ -16,20 +16,13 @@
     <!-- <link rel="stylesheet" href="./reset.css"> -->
 </head>
 <body>
-    <!-- <div id="message-container">
-        <div class="message-box" data-user="other">
-            <p>こんにちは！</p>
-        </div>
-        <div class="message-box" data-user="self">
-            <p>お元気ですか？</p>
-        </div>
-    </div> -->
     <div class="input-group chat-input">
         <input id="inputText" type="text" class="form-control" placeholder="メッセージを入力してください" >
         <div class="input-group-append">
             <button id="sendBtn" class="btn btn-primary" type="button">送信</button>
         </div>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/pixi.min.js"></script>
     <script src="./chat.js"></script>
 </body>
