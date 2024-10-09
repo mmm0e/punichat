@@ -12,7 +12,7 @@ app.use(express.static(__dirname));
 
 // ルーティングの設定。'/' にリクエストがあった場合 src/index.html を返す
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(__dirname + '/index_chat.html');
 });
 
 // HTTPサーバーを起動
@@ -31,16 +31,16 @@ io.on('connection', (socket) => {
     console.log(`Client registered: ${clientId}`);
 });
   
-  // 'ballsmove' というイベント名で受信
-  socket.on('ballsmove', (ballsData) => {
+  // 受信
+  socket.on('animationClick', (Data) => {
     //console.log('balls: ', ballsData);
-    io.emit('ballsupdate', ballsData);
-    socket.broadcast.emit('ballsupdate', ballsData);
+    // io.emit('ballsupdate', ballsData);
+    socket.broadcast.emit('animationClick', Data);
   });
   // クライアントからのボール生成イベントを受信し、他のクライアントに通知
-  socket.on('createSoftbody', (id) => {
-    socket.broadcast.emit('createSoftbody', id);
-  });
+  // socket.on('createSoftbody', (id) => {
+  //   socket.broadcast.emit('createSoftbody', id);
+  // });
 });
 
 
