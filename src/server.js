@@ -23,24 +23,27 @@ server.listen(PORT, () => {
 // クライアントとのコネクションが確立したら'connected'という表示させる
 // サーバーへのアクセスを監視。アクセスがあったらコールバックが実行
 io.on('connection', (socket) => {
-  console.log('connected');
+  	console.log('connected');
+	// 受信
+	let clientId;
+	socket.on('registerClient', (id) => {
+		clientId = id;
+		console.log(`Client registered: ${clientId}`);
+	});
 
-  let clientId;
-  socket.on('registerClient', (id) => {
-    clientId = id;
-    console.log(`Client registered: ${clientId}`);
-});
-  
-  // 受信
-  socket.on('animationClick', (Data) => {
-    //console.log('balls: ', ballsData);
-    // io.emit('ballsupdate', ballsData);
-    socket.broadcast.emit('animationClick', Data);
-  });
-  // クライアントからのボール生成イベントを受信し、他のクライアントに通知
-  // socket.on('createSoftbody', (id) => {
-  //   socket.broadcast.emit('createSoftbody', id);
-  // });
+	socket.on('sendMessage', (message) => {
+		console.log('Message has been sent: ', message);
+		io.emit('receiveMessage', message);
+	});
+	
+	socket.on('animationClick', (Data) => {
+		socket.broadcast.emit('animationClick', Data);
+	});
+
+	// クライアントからのボール生成イベントを受信し、他のクライアントに通知
+	// socket.on('createSoftbody', (id) => {
+	//   socket.broadcast.emit('createSoftbody', id);
+	// });
 });
 
 
