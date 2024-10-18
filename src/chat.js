@@ -81,14 +81,16 @@ window.onload = ()=>{
     let messageYPosition = 100; // メッセージの初期位置
 
     // メッセージを描画する関数
-    let displayMessage = (message, senderId) => {
+    let displayMessage = (message, senderId, messageId) => {
+
+        const container = new PIXI.Container();  // コンテナを作成
+        container.id = messageId || `${clientId}-${Date.now()}`;
 
         const isSelf = (senderId === clientId); // 自分のメッセージか判定
         const animation = isSelf ? whiteAnimation : greenAnimation;
 
         animation().then((anim) => {
-            const container = new PIXI.Container();  // コンテナを作成
-
+            
             // 自分のメッセージか相手のメッセージかで位置を調整
             anim.x = isSelf ? 200 : app.screen.width - 200;
             anim.y = messageYPosition + anim.height / 2;
@@ -111,20 +113,18 @@ window.onload = ()=>{
             container.addChild(text);  // テキストを追加
             app.stage.addChild(container);  // コンテナをステージに追加
 
-            messages.push(container);
-            console.log(messages[0]);
-            
-            messageYPosition += anim.height + 20;
-
             // 吹き出しをクリックでアニメーション再生
-            anim.interactive = true;
-            anim.buttonMode = true;
-            anim.on('pointerdown', () => {
+            container.interactive = true;
+            container.buttonMode = true;
+            container.on('pointerdown', () => {
                 playAnimation(anim);
-
                 // 他のクライアントにもクリック情報を送信
-                socket.emit('animationClick', { senderId, x: anim.x, y: anim.y });
+                socket.emit('animationClick', { messageId: container.id, x: anim.x, y: anim.y });
             });
+
+            messages.push(container);
+            //console.log(messages[0]);
+            messageYPosition += anim.height + 20;
         });
     };
 
@@ -152,14 +152,24 @@ window.onload = ()=>{
     // 他のクライアントがアニメーションをクリックしたときに再生
     socket.on('animationClick', (data) => {
 
-        const isSelf = (data.senderId === clientId); // クリックしたのが自分か判定
-        const animation = isSelf ? greenAnimation : whiteAnimation;
+    // 受信側の messages 配列から、該当するIDの吹き出しを探す
+    const container = messages.find(msg => msg.id === data.messageId);
     
-        animation().then((anim) => {
-            anim.x = data.x;
-            anim.y = data.y;
-            playAnimation(anim);  // 両方の画面でアニメーションを再生
-        });
+    if (container) {
+        const animation = container.children.find(child => child instanceof PIXI.AnimatedSprite);
+        if (animation) {
+            playAnimation(animation);
+        }
+    }
+
+        // const isSelf = (data.senderId === clientId); // クリックしたのが自分か判定
+        // const animation = isSelf ? greenAnimation : whiteAnimation;
+    
+        // animation().then((anim) => {
+        //     anim.x = data.x;
+        //     anim.y = data.y;
+        //     playAnimation(anim);  // 両方の画面でアニメーションを再生
+        // });
 
         // if (data.senderId !== clientId) {
         //     greenAnimation().then((anim) => {
@@ -168,9 +178,6 @@ window.onload = ()=>{
         //         playAnimation(anim);  // 他のクライアントの位置でアニメーション再生
         //     });
         // }
-    });
-
-    app.ticker.add(() => {
     });
 
     // キャンバスのリサイズに対応
