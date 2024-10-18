@@ -36,8 +36,8 @@ io.on('connection', (socket) => {
 		io.emit('receiveMessage', message);
 	});
 	
-	socket.on('animationClick', (Data) => {
-		socket.broadcast.emit('animationClick', Data);
+	socket.on('animationClick', (data) => {
+		socket.broadcast.emit('animationClick', data);
 	});
 
 });
