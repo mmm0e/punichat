@@ -15,6 +15,8 @@ window.onload = ()=>{
     });
     document.body.appendChild(app.view);
 
+    const scaling = 0.4;
+
     const greenAnimation = () =>{
         return PIXI.Assets.load("texture.json").then((spritesheet) => {
             const textures = [];
@@ -30,9 +32,7 @@ window.onload = ()=>{
                 }
             }
 
-            const scaling = 0.5;
             const anim = new PIXI.AnimatedSprite(textures);
-
             anim.anchor.set(0.5);
             anim.scale.set(scaling);
             anim.animationSpeed = 0.5;
@@ -58,7 +58,6 @@ window.onload = ()=>{
                 }
             }
 
-            const scaling = 0.5;
             const anim2 = new PIXI.AnimatedSprite(textures2);
 
             anim2.anchor.set(0.5);
@@ -72,11 +71,8 @@ window.onload = ()=>{
     }
 
     // 吹き出しアニメーションをクリックしたら再生
-    function playAnimation(anim) {
+    const playAnimation = (anim) => {
         anim.play();
-        // anim.onComplete = () => {
-        //     anim.gotoAndStop(0);  // 再生完了後、最初のフレームに戻す
-        // };
         app.start();
     }
 
@@ -86,29 +82,38 @@ window.onload = ()=>{
 
     // メッセージを描画する関数
     let displayMessage = (message, senderId) => {
-        // 自分のメッセージか他人のメッセージかでアニメーションの色を変える
-        const animation = (senderId === clientId) ? greenAnimation : whiteAnimation;
+
+        const isSelf = (senderId === clientId); // 自分のメッセージか判定
+        const animation = isSelf ? whiteAnimation : greenAnimation;
 
         animation().then((anim) => {
-            // アニメーションを表示して背景に使用
-            anim.x = 200;
+            const container = new PIXI.Container();  // コンテナを作成
+
+            // 自分のメッセージか相手のメッセージかで位置を調整
+            anim.x = isSelf ? 200 : app.screen.width - 200;
             anim.y = messageYPosition + anim.height / 2;
-            anim.gotoAndStop(0);  // 最初のフレームを停止状態で使用
+            anim.gotoAndStop(0);  // 最初のフレームで停止
 
             // テキストを追加
             let text = new PIXI.Text(message, {
                 fontFamily: 'Arial',
-                fontSize: 30,
+                fontSize: 20,
                 fill: 'black',
                 wordWrap: true,
                 wordWrapWidth: app.screen.width - 20
             });
 
             text.anchor.set(0.5);  // テキストの中心を設定
+            text.x = anim.x;
+            text.y = anim.y;
 
-            anim.addChild(text);
+            container.addChild(anim);  // 吹き出しを追加
+            container.addChild(text);  // テキストを追加
+            app.stage.addChild(container);  // コンテナをステージに追加
 
-            messages.push(anim);
+            messages.push(container);
+            console.log(messages[0]);
+            
             messageYPosition += anim.height + 20;
 
             // 吹き出しをクリックでアニメーション再生
@@ -132,7 +137,7 @@ window.onload = ()=>{
             inputElement.value = ""; // テキストボックスの値を空にする
             inputElement.placeholder = "テキストを入力してください";
         } else {
-            displayMessage(inputText, clientId);
+            //displayMessage(inputText, clientId);
             socket.emit('sendMessage', { message: inputText, senderId: clientId });
             inputElement.value = ''; // 入力フィールドをクリア
             inputElement.placeholder = "";
@@ -146,13 +151,23 @@ window.onload = ()=>{
 
     // 他のクライアントがアニメーションをクリックしたときに再生
     socket.on('animationClick', (data) => {
-        if (data.senderId !== clientId) {
-            greenAnimation().then((anim) => {
-                anim.x = data.x;
-                anim.y = data.y;
-                playAnimation(anim);  // 他のクライアントの位置でアニメーション再生
-            });
-        }
+
+        const isSelf = (data.senderId === clientId); // クリックしたのが自分か判定
+        const animation = isSelf ? greenAnimation : whiteAnimation;
+    
+        animation().then((anim) => {
+            anim.x = data.x;
+            anim.y = data.y;
+            playAnimation(anim);  // 両方の画面でアニメーションを再生
+        });
+
+        // if (data.senderId !== clientId) {
+        //     greenAnimation().then((anim) => {
+        //         anim.x = data.x;
+        //         anim.y = data.y;
+        //         playAnimation(anim);  // 他のクライアントの位置でアニメーション再生
+        //     });
+        // }
     });
 
     app.ticker.add(() => {
