@@ -72,7 +72,7 @@ window.onload = ()=>{
 
     // 吹き出しアニメーションをクリックしたら再生
     const playAnimation = (anim) => {
-        anim.play();
+        anim.gotoAndPlay(0);
         app.start();
     }
 
@@ -83,18 +83,13 @@ window.onload = ()=>{
     // メッセージを描画する関数
     let displayMessage = (message, senderId, messageId) => {
 
-        const container = new PIXI.Container();  // コンテナを作成
+        const container = new PIXI.Container();
         container.id = messageId || `${clientId}-${Date.now()}`;
 
         const isSelf = (senderId === clientId); // 自分のメッセージか判定
-        const animation = isSelf ? whiteAnimation : greenAnimation;
+        const animation = isSelf ? greenAnimation : whiteAnimation;
 
         animation().then((anim) => {
-            
-            // 自分のメッセージか相手のメッセージかで位置を調整
-            anim.x = isSelf ? 200 : app.screen.width - 200;
-            anim.y = messageYPosition + anim.height / 2;
-            anim.gotoAndStop(0);  // 最初のフレームで停止
 
             // テキストを追加
             let text = new PIXI.Text(message, {
@@ -102,29 +97,41 @@ window.onload = ()=>{
                 fontSize: 20,
                 fill: 'black',
                 wordWrap: true,
-                wordWrapWidth: app.screen.width - 20
+                breakWords: true,
+                wordWrapWidth: 250
             });
 
-            text.anchor.set(0.5);  // テキストの中心を設定
+            // 吹き出し背景をテキストのサイズに合わせて調整
+            const textBounds = text.getLocalBounds();  // テキストの横幅、縦幅を取得
+            anim.width = textBounds.width + 40;  // 吹き出しの幅をテキストに合わせる + 余白
+            anim.height = textBounds.height + 30;
+
+            // 自分のメッセージか相手のメッセージかで位置を調整
+            anim.x = isSelf ? app.screen.width - (anim.width/2 + 50) : 50 + (anim.width/2);
+            anim.y = messageYPosition;
+
+            text.anchor.set(0.5);
             text.x = anim.x;
             text.y = anim.y;
 
-            container.addChild(anim);  // 吹き出しを追加
-            container.addChild(text);  // テキストを追加
-            app.stage.addChild(container);  // コンテナをステージに追加
+            container.addChild(anim);
+            container.addChild(text);
+            app.stage.addChild(container);
 
             // 吹き出しをクリックでアニメーション再生
             container.interactive = true;
             container.buttonMode = true;
+
             container.on('pointerdown', () => {
-                playAnimation(anim);
-                // 他のクライアントにもクリック情報を送信
-                socket.emit('animationClick', { messageId: container.id, x: anim.x, y: anim.y });
+                if (senderId !== clientId) {
+                    playAnimation(anim);
+                    // 他のクライアントにもクリック情報を送信
+                    socket.emit('animationClick', { messageId: container.id, senderId });
+                }
             });
+            messageYPosition += anim.height + 20;
 
             messages.push(container);
-            //console.log(messages[0]);
-            messageYPosition += anim.height + 20;
         });
     };
 
@@ -132,52 +139,34 @@ window.onload = ()=>{
     document.getElementById('sendBtn').addEventListener('click', () => {
         let inputElement = document.getElementById('inputText');
         let inputText = inputElement.value.trim();
-
+        
         if (inputText === "") {
             inputElement.value = ""; // テキストボックスの値を空にする
             inputElement.placeholder = "テキストを入力してください";
         } else {
-            //displayMessage(inputText, clientId);
-            socket.emit('sendMessage', { message: inputText, senderId: clientId });
-            inputElement.value = ''; // 入力フィールドをクリア
+            const messageId = `${clientId}-${Date.now()}`;
+            socket.emit('sendMessage', { message: inputText, senderId: clientId, messageId });
+            inputElement.value = '';
             inputElement.placeholder = "";
         }
     });
 
     // メッセージ受信
     socket.on('receiveMessage', (data) => {
-        displayMessage(data.message, data.senderId); 
+        displayMessage(data.message, data.senderId, data.messageId); 
     });
 
     // 他のクライアントがアニメーションをクリックしたときに再生
     socket.on('animationClick', (data) => {
 
-    // 受信側の messages 配列から、該当するIDの吹き出しを探す
-    const container = messages.find(msg => msg.id === data.messageId);
-    
-    if (container) {
-        const animation = container.children.find(child => child instanceof PIXI.AnimatedSprite);
-        if (animation) {
-            playAnimation(animation);
+        // 受信側の messages 配列から、該当するIDの吹き出しを探す
+        const container = messages.find(msg => msg.id === data.messageId);
+        if (container) {
+            const animation = container.children.find(child => child instanceof PIXI.AnimatedSprite);
+            if (animation) {
+                playAnimation(animation);
+            }
         }
-    }
-
-        // const isSelf = (data.senderId === clientId); // クリックしたのが自分か判定
-        // const animation = isSelf ? greenAnimation : whiteAnimation;
-    
-        // animation().then((anim) => {
-        //     anim.x = data.x;
-        //     anim.y = data.y;
-        //     playAnimation(anim);  // 両方の画面でアニメーションを再生
-        // });
-
-        // if (data.senderId !== clientId) {
-        //     greenAnimation().then((anim) => {
-        //         anim.x = data.x;
-        //         anim.y = data.y;
-        //         playAnimation(anim);  // 他のクライアントの位置でアニメーション再生
-        //     });
-        // }
     });
 
     // キャンバスのリサイズに対応
