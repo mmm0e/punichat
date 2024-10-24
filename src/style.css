@@ -1,44 +1,42 @@
-body {
-  display: flex;
-  flex-direction: column;
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#message-container {
   position: relative;
-  padding-bottom: 30px;
-  box-sizing: border-box;
-}
-
-#room {
   width: 100%;
-  min-height: 100vh;
-  overflow: scroll;
-  background-color: rgb(113, 147, 193);
+  height: calc(100% - 60px); /* メッセージ入力エリア分の高さを引く */
+  background-color: #87CEEB; /* 背景色 */
 }
 
-.chat-input {
-  position: fixed;
+.input-group.chat-input {
+  position: absolute;
   bottom: 0;
-}
-
-.box-left {
+  width: 100%;
   display: flex;
-  justify-content: flex-start;
-}
-
-.box-right {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.message-box {
-  padding: 50px;
-  max-width: 40%;
-  margin: 10px;
-  border-radius: 30px;
-}
-
-.white {
   background-color: white;
+  border-top: 1px solid #ccc;
 }
 
-.green {
-  background-color: yellowgreen;
+.input-group.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  font-size: 16px;
+}
+
+.input-group.chat-input button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.input-group.chat-input button:hover {
+  background-color: #45a049;
 }
