@@ -1,130 +1,173 @@
-import { MessageApp } from "./message.js";
+import { MessageApp } from './message.js'
 
-const socket = io();
+const socket = io()
 
-let clientId = String.fromCharCode(97 + Math.floor(Math.random() * 26)) + Date.now().toString(); 
+let clientId =
+  String.fromCharCode(97 + Math.floor(Math.random() * 26)) +
+  Date.now().toString()
 
 socket.on('connect', () => {
-    socket.emit('registerClient', clientId);
-});
+  socket.emit('registerClient', clientId)
+})
 
-    const app = new PIXI.Application({
-        antialias: true,
-        autoStart: false,
-        resizeTo: window,
-        backgroundColor: 0x87CEEB
-    });
-    document.body.appendChild(app.view);
+const app = new PIXI.Application({
+  antialias: true,
+  autoStart: false,
+  resizeTo: window,
+  backgroundColor: 0x87ceeb,
+})
+document.body.appendChild(app.view)
 
-    //const graphics = new PIXI.Graphics(); 
+//const graphics = new PIXI.Graphics();
 
-    // // 吹き出しアニメーションをクリックしたら再生
-    // const playAnimation = (anim) => {
-    //     anim.gotoAndPlay(0);
-    //     app.start();
-    // }
+// // 吹き出しアニメーションをクリックしたら再生
+// const playAnimation = (anim) => {
+//     anim.gotoAndPlay(0);
+//     app.start();
+// }
 
-    //メッセージアプリ部分
-    // let messages = [];
-    // let messageYPosition = 100; // メッセージの初期位置
+//メッセージアプリ部分
+// let messages = [];
+// let messageYPosition = 100; // メッセージの初期位置
 
-    // メッセージを描画する関数
-    // let displayMessage = (message, senderId, messageId) => {
+// メッセージを描画する関数
+// let displayMessage = (message, senderId, messageId) => {
 
-    //     const container = new PIXI.Container();
-    //     container.id = messageId || `${clientId}-${Date.now()}`;
+//     const container = new PIXI.Container();
+//     container.id = messageId || `${clientId}-${Date.now()}`;
 
-    //     const isSelf = (senderId === clientId); // 自分のメッセージか判定
-    //     const animation = isSelf ? greenAnimation : whiteAnimation;
+//     const isSelf = (senderId === clientId); // 自分のメッセージか判定
+//     const animation = isSelf ? greenAnimation : whiteAnimation;
 
-    //     animation().then((anim) => {
+//     animation().then((anim) => {
 
-    //         // テキストを追加
-    //         let text = new PIXI.Text(message, {
-    //             fontFamily: 'Arial',
-    //             fontSize: 20,
-    //             fill: 'black',
-    //             wordWrap: true,
-    //             breakWords: true,
-    //             wordWrapWidth: 250
-    //         });
+//         // テキストを追加
+//         let text = new PIXI.Text(message, {
+//             fontFamily: 'Arial',
+//             fontSize: 20,
+//             fill: 'black',
+//             wordWrap: true,
+//             breakWords: true,
+//             wordWrapWidth: 250
+//         });
 
-    //         // 吹き出し背景をテキストのサイズに合わせて調整
-    //         const textBounds = text.getLocalBounds();  // テキストの横幅、縦幅を取得
-    //         anim.width = textBounds.width + 40;  // 吹き出しの幅をテキストに合わせる + 余白
-    //         anim.height = textBounds.height + 30;
+//         // 吹き出し背景をテキストのサイズに合わせて調整
+//         const textBounds = text.getLocalBounds();  // テキストの横幅、縦幅を取得
+//         anim.width = textBounds.width + 40;  // 吹き出しの幅をテキストに合わせる + 余白
+//         anim.height = textBounds.height + 30;
 
-    //         // 自分のメッセージか相手のメッセージかで位置を調整
-    //         anim.x = isSelf ? app.screen.width - (anim.width/2 + 50) : 50 + (anim.width/2);
-    //         anim.y = messageYPosition;
+//         // 自分のメッセージか相手のメッセージかで位置を調整
+//         anim.x = isSelf ? app.screen.width - (anim.width/2 + 50) : 50 + (anim.width/2);
+//         anim.y = messageYPosition;
 
-    //         text.anchor.set(0.5);
-    //         text.x = anim.x;
-    //         text.y = anim.y;
+//         text.anchor.set(0.5);
+//         text.x = anim.x;
+//         text.y = anim.y;
 
-    //         container.addChild(anim);
-    //         container.addChild(text);
-    //         app.stage.addChild(container);
+//         container.addChild(anim);
+//         container.addChild(text);
+//         app.stage.addChild(container);
 
-    //         // 吹き出しをクリックでアニメーション再生
-    //         container.interactive = true;
-    //         container.buttonMode = true;
+//         // 吹き出しをクリックでアニメーション再生
+//         container.interactive = true;
+//         container.buttonMode = true;
 
-    //         container.on('pointerdown', () => {
-    //             if (senderId !== clientId) {
-    //                 playAnimation(anim);
-    //                 // 他のクライアントにもクリック情報を送信
-    //                 socket.emit('animationClick', { messageId: container.id, senderId });
-    //             }
-    //         });
-    //         messageYPosition += anim.height + 20;
+//         container.on('pointerdown', () => {
+//             if (senderId !== clientId) {
+//                 playAnimation(anim);
+//                 // 他のクライアントにもクリック情報を送信
+//                 socket.emit('animationClick', { messageId: container.id, senderId });
+//             }
+//         });
+//         messageYPosition += anim.height + 20;
 
-    //         messages.push(container);
-    //     });
-    // };
+//         messages.push(container);
+//     });
+// };
 
-    // PIXIアプリケーション、ソケット、クライアントIDを用意
-    const messageApp = new MessageApp(app, socket, clientId);
+// PIXIアプリケーション、ソケット、クライアントIDを用意
+const messageApp = new MessageApp(800, 1000, clientId)
+messageApp.on('animationClick', (data) => {
+  console.log('animationClick', data)
+  animationClick(data)
+})
+messageApp.on('sendMessage', (data) => {
+  sendMessage(data)
+})
+app.stage.addChild(messageApp)
 
-    //ボタンクリックで送信
-    // document.getElementById('sendBtn').addEventListener('click', () => {
-    //     let inputElement = document.getElementById('inputText');
-    //     let inputText = inputElement.value.trim();
-        
-    //     if (inputText === "") {
-    //         inputElement.value = ""; // テキストボックスの値を空にする
-    //         inputElement.placeholder = "テキストを入力してください";
-    //     } else {
-    //         const messageId = `${clientId}-${Date.now()}`;
-    //         socket.emit('sendMessage', { message: inputText, senderId: clientId, messageId });
-    //         inputElement.value = '';
-    //         inputElement.placeholder = "";
-    //     }
-    // });
+//ボタンクリックで送信
+// document.getElementById('sendBtn').addEventListener('click', () => {
+//     let inputElement = document.getElementById('inputText');
+//     let inputText = inputElement.value.trim();
 
-    // メッセージ受信
-    // socket.on('receiveMessage', (data) => {
-    //     displayMessage(data.message, data.senderId, data.messageId); 
-    // });
+//     if (inputText === "") {
+//         inputElement.value = ""; // テキストボックスの値を空にする
+//         inputElement.placeholder = "テキストを入力してください";
+//     } else {
+//         const messageId = `${clientId}-${Date.now()}`;
+//         socket.emit('sendMessage', { message: inputText, senderId: clientId, messageId });
+//         inputElement.value = '';
+//         inputElement.placeholder = "";
+//     }
+// });
 
-    // // 他のクライアントがアニメーションをクリックしたときに再生
-    // socket.on('animationClick', (data) => {
+// メッセージ受信
+// socket.on('receiveMessage', (data) => {
+//     displayMessage(data.message, data.senderId, data.messageId);
+// });
 
-    //     // 受信側の messages 配列から、該当するIDの吹き出しを探す
-    //     const container = messages.find(msg => msg.id === data.messageId);
-    //     if (container) {
-    //         const animation = container.children.find(child => child instanceof PIXI.AnimatedSprite);
-    //         if (animation) {
-    //             playAnimation(animation);
-    //         }
-    //     }
-    // });
-    
-    app.start()
+// // 他のクライアントがアニメーションをクリックしたときに再生
+// socket.on('animationClick', (data) => {
 
-    // キャンバスのリサイズに対応
-    window.addEventListener('resize', () => {
-        app.renderer.resize(window.innerWidth, window.innerHeight);
-    });
+//     // 受信側の messages 配列から、該当するIDの吹き出しを探す
+//     const container = messages.find(msg => msg.id === data.messageId);
+//     if (container) {
+//         const animation = container.children.find(child => child instanceof PIXI.AnimatedSprite);
+//         if (animation) {
+//             playAnimation(animation);
+//         }
+//     }
+// });
 
+// 受信メッセージのソケットイベント
+socket.on('receiveMessage', (data) => {
+  console.log('receiveMessage', data)
+  messageApp.displayMessage(data.message, data.clientId, data.messageId)
+})
 
+//他人が吹き出しをクリックしたイベントを受信
+socket.on('animationClick', (data) => {
+  messageApp.handleAnimationClick(data)
+})
+
+/*
+ * 自分から他人にメッセージを送信するところ
+ */
+function sendMessage(params) {
+  console.log('sendMessage,', params)
+  socket.emit('sendMessage', {
+    message: params.message,
+    clientId: params.clientId,
+    messageId: params.messageId,
+  })
+}
+
+/*
+ * 送信者側がアニメーションをクリックしたときの処理
+ */
+function animationClick(params) {
+  console.log('sender animationClick', params)
+  socket.emit('animationClick', {
+    messageId: params.messageId,
+    senderId: params.senderId,
+  })
+}
+
+app.start()
+
+// キャンバスのリサイズに対応
+window.addEventListener('resize', () => {
+  app.renderer.resize(window.innerWidth, window.innerHeight)
+  messageApp.setSize(window.innerWidth, window.innerHeight)
+})
