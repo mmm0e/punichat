@@ -37,14 +37,12 @@ export class animation extends PIXI.Sprite {
   // アニメーションを再生するメソッド
   playAnimation() {
     if (this.anim) {
+			this.anim.gotoAndStop(0);
       this.anim.play()
+			this.anim.onComplete = () => {
+					this.anim.gotoAndStop(0) // 再生完了後、最初のフレームに戻す
+			}
     }
   }
-
-  // アニメーションを停止し、最初のフレームに戻すメソッド
-  resetAnimation() {
-    if (this.anim) {
-      this.anim.gotoAndStop(0)
-    }
-  }
+	
 }
