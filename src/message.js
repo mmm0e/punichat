@@ -3,18 +3,26 @@ import { animation } from './animation_sprite.js'
 export class MessageApp extends PIXI.Sprite {
   constructor(w, h, clientId) {
     super()
-
+		
     this._w = w
     this._h = h
-
     this.clientId = clientId
     this.messages = []
     this.messageYPosition = 80 // メッセージの初期位置
 
+    // スクロール可能なメッセージ一覧エリアをラップするコンテナ
+    this.messageList = new PIXI.Container()
+    this.messageList.y = 0
+    this.addChild(this.messageList)
+
     // メッセージ送信ボタンクリックイベント
     document.getElementById('sendBtn').addEventListener('click', () => this.sendMessage())
     document.getElementById('inputText').addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') this.sendMessage()
+      if (e.isComposing || e.key === 229) {
+        return;
+      }else if (e.key === 'Enter') { 
+        this.sendMessage()
+      }
     })
   }
 
@@ -49,7 +57,8 @@ export class MessageApp extends PIXI.Sprite {
 
     container.addChild(anim)
     container.addChild(text)
-    this.addChild(container)
+    //this.addChild(container)
+    this.messageList.addChild(container) // メッセージ一覧に追加
 
     container.interactive = true
     container.buttonMode = true
@@ -64,13 +73,20 @@ export class MessageApp extends PIXI.Sprite {
 
     this.messageYPosition += anim.height + 30
     this.messages.push(container)
+
+		// メッセージ追加後に最新のメッセージが表示されるようにスクロール
+    this.scrollToBottom()
+  }
+
+  scrollToBottom() {
+    this.messageList.y = -Math.max(0, this.messageYPosition - this._h + 50)
   }
 
   sendMessage() {
     let inputElement = document.getElementById('inputText')
     let inputText = inputElement.value.trim()
-
     console.log('sendMessage : ', inputText, this.clientId)
+		
     if (inputText !== '') {
       const messageId = `${this.clientId}-${Date.now()}`
       this.emit('sendMessage', {
@@ -100,8 +116,4 @@ export class MessageApp extends PIXI.Sprite {
     }
   }
 
-//   setSize(w, h) {
-//     console.log(w, h)
-//     //todo 自分でサイズ変更かいて
-//   }
 }
