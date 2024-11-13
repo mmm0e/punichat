@@ -20,6 +20,9 @@ document.body.appendChild(app.view)
 
 // PIXIアプリケーション、ソケット、クライアントIDを用意
 const messageApp = new MessageApp(window.innerWidth, window.innerHeight, clientId)
+
+//document.getElementById('messageContainer').appendChild(app.view)  // PIXIキャンバスを表示
+
 messageApp.on('animationClick', (data) => {
   console.log('animationClick', data)
   animationClick(data)
