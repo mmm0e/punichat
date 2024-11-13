@@ -5,20 +5,7 @@ html, body {
   overflow: hidden;
 }
 
-/* #message-container {
-  position: relative;
-  width: 100%;
-  height: calc(100% - 60px);
-  background-color: #87CEEB; 
-} */
 
-#message-container {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  height: 80vh;
-  overflow-y: auto;
-}
 
 .input-group.chat-input {
   position: absolute;
