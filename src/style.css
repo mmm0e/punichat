@@ -5,11 +5,19 @@ html, body {
   overflow: hidden;
 }
 
-#message-container {
+/* #message-container {
   position: relative;
   width: 100%;
-  height: calc(100% - 60px); /* メッセージ入力エリア分の高さを引く */
-  background-color: #87CEEB; /* 背景色 */
+  height: calc(100% - 60px);
+  background-color: #87CEEB; 
+} */
+
+#message-container {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 80vh;
+  overflow-y: auto;
 }
 
 .input-group.chat-input {
