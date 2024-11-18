@@ -67,7 +67,15 @@ export class MessageApp extends PIXI.Sprite {
       if (senderId != this.clientId) {
         container.animInstance.playAnimation()
         console.log('send animationClick event')
-        this.emit('animationClick', {messageId: container.id,senderId: senderId,})
+        this.emit('animationClick', {messageId: container.id, senderId: senderId,})
+      }
+    })
+
+    // タッチイベント
+    container.on('touchstart', () => {
+      if (senderId !== this.clientId) {
+        container.animInstance.playAnimation();
+        this.emit('animationClick', { messageId: container.id, senderId: senderId });
       }
     })
 
@@ -80,6 +88,16 @@ export class MessageApp extends PIXI.Sprite {
 
   scrollToBottom() {
     this.messageList.y = -Math.max(0, this.messageYPosition - this._h + 50)
+
+    // メッセージリストをスクロール
+    const messageContainer = document.getElementById('message-container');
+    
+    if (messageContainer) {
+      messageContainer.scrollTop = messageContainer.scrollHeight;
+    } else {
+        console.warn("message-containerが見つかりませんでした");
+    }
+    //messageContainer.scrollTop = messageContainer.scrollHeight;
   }
 
   sendMessage() {
