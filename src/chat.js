@@ -1,6 +1,6 @@
 import { MessageApp } from './message.js'
 
-const socket = io()
+const socket = io(location.origin)
 
 let clientId =
   String.fromCharCode(97 + Math.floor(Math.random() * 26)) +
