@@ -17,6 +17,7 @@ const app = new PIXI.Application({
   backgroundColor: 0x87ceeb,
 })
 document.body.appendChild(app.view)
+//app.view.focus()
 
 // PIXIアプリケーション、ソケット、クライアントIDを用意
 const messageApp = new MessageApp(window.innerWidth, window.innerHeight, clientId)
