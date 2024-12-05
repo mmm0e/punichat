@@ -69,14 +69,29 @@ export class MessageApp extends PIXI.Sprite {
         console.log('send animationClick event')
         this.emit('animationClick', {messageId: container.id, senderId: senderId,})
       }
+
     })
 
     // タッチイベント
     container.on('touchstart', () => {
       if (senderId !== this.clientId) {
         container.animInstance.playAnimation();
+        console.log('send animationClick event')
         this.emit('animationClick', { messageId: container.id, senderId: senderId });
       }
+
+        
+          // if(window.navigator.vibrate){
+          //   window.navigator.vibrate([200,200,200,200,200]);
+          // }else if(window.navigator.mozVibrate){
+          //   window.navigator.mozVibrate([200,200,200]);
+          // }else if(window.navigator.webkitVibrate){
+          //   window.navigator.webkitVibrate([200]);
+          // }else{
+          //   alert("sorry (T-T)");
+          // }
+
+
     })
 
     this.messageYPosition += anim.height + 30
