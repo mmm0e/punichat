@@ -43,6 +43,15 @@ export class animation extends PIXI.Sprite {
 					this.anim.gotoAndStop(0) // 再生完了後、最初のフレームに戻す
 			}
     }
+    if(window.navigator.vibrate){
+      window.navigator.vibrate([100,100,100,100,100]);
+    }else if(window.navigator.mozVibrate){
+      window.navigator.mozVibrate([200,200,200]);
+    }else if(window.navigator.webkitVibrate){
+      window.navigator.webkitVibrate([200,200,200]);
+    }else{
+      alert("sorry (T-T)");
+    }
   }
 	
 }
